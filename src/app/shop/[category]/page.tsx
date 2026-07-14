@@ -47,7 +47,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const [{ products, count }, { categories, brands }] = await Promise.all([
     getShopProducts({ category: slug, brand, min_price, max_price, sort, page, pageSize: PAGE_SIZE }),
-    getShopFilterOptions(),
+    getShopFilterOptions(slug),
   ]);
 
   return (
@@ -72,7 +72,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
       <ShopResults
         pathname={pathname}
-        current={{ category: slug, brand, min_price, max_price, sort }}
+        current={{ brand, min_price, max_price, sort }}
         page={page}
         pageSize={PAGE_SIZE}
         products={products}

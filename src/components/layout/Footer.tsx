@@ -3,9 +3,9 @@ import { Mail, Phone } from "lucide-react";
 
 const SHOP_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
-  { href: "/shop/orthopaedic-injectables", label: "Orthopaedic injectables" },
   { href: "/shop/botulinum-toxins", label: "Botulinum toxins" },
-  { href: "/shop/pdo-threads", label: "PDO threads" },
+  { href: "/shop/orthopedic-injections", label: "Orthopedic injections" },
+  { href: "/shop/threads", label: "Threads" },
   { href: "/shop", label: "All categories" },
 ];
 

@@ -3,10 +3,10 @@ import { Search, ShoppingCart } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
-  { href: "/shop/orthopaedic-injectables", label: "Orthopaedic" },
   { href: "/shop/botulinum-toxins", label: "Botulinum toxins" },
-  { href: "/shop/pdo-threads", label: "Threads" },
-  { href: "/brands", label: "Brands" },
+  { href: "/shop/orthopedic-injections", label: "Orthopedic" },
+  { href: "/shop/threads", label: "Threads" },
+  { href: "/shop", label: "Brands" },
 ];
 
 export default function Navbar() {
