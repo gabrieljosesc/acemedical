@@ -10,10 +10,12 @@ export type CatalogProduct = {
   specLine: string;
   stockLabel: StockLabel;
   categoryLabel: string;
+  image: string | null;
 };
 
 export type ProductDetail = CatalogProduct & {
   description: string | null;
   categorySlug: string;
   specs: Array<{ label: string; value: string }>;
+  images: string[];
 };

@@ -16,13 +16,16 @@ export interface ShopFilterParams {
 
 export type ShopFilterOption = { slug: string; name: string };
 
+const PRODUCT_FIELDS =
+  "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
+
 function isSupabaseConfigured() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
-function mapRow(row: {
+export function mapRow(row: {
   id: string;
   slug: string;
   name: string;
@@ -31,6 +34,7 @@ function mapRow(row: {
   stock_quantity: number | null;
   is_in_stock: boolean;
   specs: unknown;
+  images: string[] | null;
   brands: { name: string } | { name: string }[] | null;
   categories: { name: string } | { name: string }[] | null;
 }): CatalogProduct {
@@ -53,6 +57,7 @@ function mapRow(row: {
         ? "low-stock"
         : "in-stock",
     categoryLabel: category ?? "",
+    image: row.images?.[0] ?? null,
   };
 }
 
@@ -82,12 +87,7 @@ export async function getShopProducts(
     if (!brandId) return { products: [], count: 0 };
   }
 
-  let query = admin
-    .from("products")
-    .select(
-      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, featured, brands(name), categories(name)",
-      { count: "exact" }
-    );
+  let query = admin.from("products").select(PRODUCT_FIELDS, { count: "exact" });
 
   if (filters.search) query = query.ilike("name", `%${filters.search}%`);
   if (categoryId) query = query.eq("category_id", categoryId);
@@ -118,22 +118,43 @@ export async function getShopProducts(
   return { products: data.map(mapRow), count: count ?? 0 };
 }
 
-export async function getShopFilterOptions(): Promise<{
+export async function getShopFilterOptions(categorySlug?: string): Promise<{
   categories: ShopFilterOption[];
   brands: ShopFilterOption[];
 }> {
   if (!isSupabaseConfigured()) return { categories: [], brands: [] };
 
   const admin = createAdminClient();
-  const [{ data: categories }, { data: brands }] = await Promise.all([
+  const [{ data: categories }, { data: allBrands }] = await Promise.all([
     admin.from("categories").select("slug, name").is("parent_id", null).order("sort_order"),
-    admin.from("brands").select("slug, name").order("name"),
+    admin.from("brands").select("id, slug, name").order("name"),
   ]);
 
-  return {
-    categories: categories ?? [],
-    brands: brands ?? [],
-  };
+  if (!categorySlug) {
+    return {
+      categories: categories ?? [],
+      brands: (allBrands ?? []).map(({ slug, name }) => ({ slug, name })),
+    };
+  }
+
+  // Scope the brand list to brands that actually have a product in this
+  // category — otherwise most brand filters on a category page would be
+  // dead ends ("No results") for brands sold under a different category.
+  const { data: category } = await admin.from("categories").select("id").eq("slug", categorySlug).single();
+  if (!category) return { categories: categories ?? [], brands: [] };
+
+  const { data: productBrands } = await admin
+    .from("products")
+    .select("brand_id")
+    .eq("category_id", category.id)
+    .not("brand_id", "is", null);
+
+  const brandIdsInCategory = new Set((productBrands ?? []).map((p) => p.brand_id));
+  const brands = (allBrands ?? [])
+    .filter((b) => brandIdsInCategory.has(b.id))
+    .map(({ slug, name }) => ({ slug, name }));
+
+  return { categories: categories ?? [], brands };
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -150,7 +171,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const { data, error } = await admin
     .from("products")
     .select(
-      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, description, brands(name), categories(name, slug)"
+      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, description, brands(name), categories(name, slug)"
     )
     .eq("slug", slug)
     .single();
@@ -166,6 +187,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
     description: data.description ?? null,
     categorySlug: category?.slug ?? "",
     specs,
+    images: data.images ?? [],
   };
 }
 
@@ -182,10 +204,28 @@ export async function getRelatedProducts(
 
   const { data } = await admin
     .from("products")
-    .select("id, slug, name, sku, price, stock_quantity, is_in_stock, specs, brands(name), categories(name)")
+    .select(PRODUCT_FIELDS)
     .eq("category_id", category.id)
     .neq("id", excludeId)
     .limit(limit);
 
   return (data ?? []).map(mapRow);
+}
+
+export async function getTopBrands(limit = 8): Promise<ShopFilterOption[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const admin = createAdminClient();
+  const { data } = await admin.from("brands").select("slug, name, products(count)");
+  if (!data) return [];
+
+  return data
+    .map((b) => ({
+      slug: b.slug,
+      name: b.name,
+      count: Array.isArray(b.products) ? (b.products[0]?.count ?? 0) : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map(({ slug, name }) => ({ slug, name }));
 }

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { mapRow } from "@/lib/shop-products";
 import type { CatalogProduct } from "@/lib/types";
 
 export type HomeCategory = {
@@ -11,70 +12,22 @@ export type HeroProduct = CatalogProduct & {
   specs: Array<{ label: string; value: string }>;
 };
 
+const PRODUCT_FIELDS =
+  "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
+
 function isSupabaseConfigured() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
-// Placeholder catalog shown until the Supabase project is created and seeded.
-// Mirrors supabase/schema.sql exactly so swapping to live data is a no-op.
+// Placeholder catalog shown only if Supabase isn't configured yet, or a
+// query genuinely returns nothing (e.g. before any product is seeded).
 const FALLBACK_CATEGORIES: HomeCategory[] = [
-  { slug: "dermal-fillers", name: "Dermal fillers", productCount: 142 },
-  { slug: "orthopaedic-injectables", name: "Orthopaedic injectables", productCount: 63 },
-  { slug: "botulinum-toxins", name: "Botulinum toxins", productCount: 28 },
-  { slug: "pdo-threads", name: "PDO threads", productCount: 47 },
-  { slug: "anaesthetics", name: "Anaesthetics", productCount: 34 },
-  { slug: "mesotherapy-peels", name: "Mesotherapy & peels", productCount: 58 },
-  { slug: "weight-management", name: "Weight management", productCount: 19 },
-  { slug: "prp-kits", name: "PRP & kits", productCount: 22 },
-];
-
-const FALLBACK_BEST_SELLERS: CatalogProduct[] = [
-  {
-    id: "synvisc-one",
-    slug: "synvisc-one",
-    name: "Synvisc-One",
-    brand: "Sanofi",
-    price: 329,
-    sku: "SYN-ONE",
-    specLine: "1 × 6 mL · hylan G-F 20 · intra-articular",
-    stockLabel: "in-stock",
-    categoryLabel: "Orthopaedic",
-  },
-  {
-    id: "prolia-60mg",
-    slug: "prolia-60mg",
-    name: "Prolia 60 mg",
-    brand: "Amgen",
-    price: 499,
-    sku: "PRO-60",
-    specLine: "1 × 1.0 mL · denosumab · pre-filled",
-    stockLabel: "in-stock",
-    categoryLabel: "Bone health",
-  },
-  {
-    id: "juvederm-ultra-xc",
-    slug: "juvederm-ultra-xc",
-    name: "Juvéderm Ultra XC",
-    brand: "Allergan Aesthetics",
-    price: 359,
-    sku: "JUV-ULT",
-    specLine: "2 × 1.0 mL · 24 mg/mL HA · 0.3% lido",
-    stockLabel: "in-stock",
-    categoryLabel: "Dermal filler",
-  },
-  {
-    id: "botox-100u",
-    slug: "botox-100u",
-    name: "Botox 100 U",
-    brand: "Allergan Aesthetics",
-    price: 549,
-    sku: "BTX-100",
-    specLine: "1 vial · 100 units · onabotulinumtoxinA",
-    stockLabel: "low-stock",
-    categoryLabel: "Botulinum toxin",
-  },
+  { slug: "dermal-fillers", name: "Dermal Fillers", productCount: 0 },
+  { slug: "botulinum-toxins", name: "Botulinum Toxins", productCount: 0 },
+  { slug: "orthopedic-injections", name: "Orthopedic Injections", productCount: 0 },
+  { slug: "threads", name: "Threads", productCount: 0 },
 ];
 
 const FALLBACK_HERO_PRODUCT: HeroProduct = {
@@ -87,6 +40,7 @@ const FALLBACK_HERO_PRODUCT: HeroProduct = {
   specLine: "2 × 1.0 mL · 20 mg/mL HA",
   stockLabel: "in-stock",
   categoryLabel: "Dermal filler",
+  image: null,
   specs: [
     { label: "Volume", value: "2 × 1.0 mL" },
     { label: "HA conc.", value: "20 mg/mL" },
@@ -127,45 +81,48 @@ export async function getHomeCategories(): Promise<HomeCategory[]> {
 }
 
 export async function getBestSellers(): Promise<CatalogProduct[]> {
-  if (!isSupabaseConfigured()) return FALLBACK_BEST_SELLERS;
+  if (!isSupabaseConfigured()) return [];
 
   try {
     const admin = createAdminClient();
     const { data: products, error } = await admin
       .from("products")
-      .select(
-        "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, brands(name), categories(name)"
-      )
+      .select(PRODUCT_FIELDS)
       .eq("featured", true)
       .eq("is_in_stock", true)
       .limit(4);
 
-    if (error || !products || products.length === 0) return FALLBACK_BEST_SELLERS;
+    if (error || !products) return [];
 
-    return products.map((p): CatalogProduct => {
-      // specs is stored as an ordered [{label, value}] array — jsonb objects
-      // don't preserve key insertion order, so a plain dict would scramble it.
-      const specs = (p.specs ?? []) as Array<{ label: string; value: string }>;
-      const specLine = specs.map((s) => s.value).join(" · ");
-      const brand = Array.isArray(p.brands) ? p.brands[0]?.name : (p.brands as { name: string } | null)?.name;
-      const category = Array.isArray(p.categories) ? p.categories[0]?.name : (p.categories as { name: string } | null)?.name;
-      return {
-        id: p.id,
-        slug: p.slug,
-        name: p.name,
-        brand: brand ?? null,
-        price: Number(p.price),
-        sku: p.sku,
-        specLine: specLine || "",
-        stockLabel: !p.is_in_stock ? "out-of-stock" : (p.stock_quantity ?? 999) <= 10 ? "low-stock" : "in-stock",
-        categoryLabel: category ?? "",
-      };
-    });
+    return products.map(mapRow);
   } catch {
-    return FALLBACK_BEST_SELLERS;
+    return [];
   }
 }
 
 export async function getHeroProduct(): Promise<HeroProduct> {
-  return FALLBACK_HERO_PRODUCT;
+  if (!isSupabaseConfigured()) return FALLBACK_HERO_PRODUCT;
+
+  try {
+    const admin = createAdminClient();
+    // Prefer a featured product that actually has a photo and a real spec
+    // sheet, since those make the best hero. Fall back to any featured
+    // product, then to the placeholder if the catalog is empty.
+    const { data: products } = await admin
+      .from("products")
+      .select(PRODUCT_FIELDS)
+      .eq("featured", true)
+      .eq("is_in_stock", true)
+      .limit(20);
+
+    if (!products || products.length === 0) return FALLBACK_HERO_PRODUCT;
+
+    const withImage = products.find((p) => (p.images ?? []).length > 0) ?? products[0];
+    const catalog = mapRow(withImage);
+    const specs = (withImage.specs ?? []) as Array<{ label: string; value: string }>;
+
+    return { ...catalog, specs };
+  } catch {
+    return FALLBACK_HERO_PRODUCT;
+  }
 }
