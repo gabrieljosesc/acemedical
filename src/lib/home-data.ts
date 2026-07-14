@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import type { CatalogProduct } from "@/lib/types";
 
 export type HomeCategory = {
   slug: string;
@@ -6,18 +7,7 @@ export type HomeCategory = {
   productCount: number;
 };
 
-export type HomeProduct = {
-  slug: string;
-  name: string;
-  brand: string | null;
-  price: number;
-  sku: string | null;
-  specLine: string;
-  stockLabel: "in-stock" | "low-stock";
-  categoryLabel: string;
-};
-
-export type HeroProduct = HomeProduct & {
+export type HeroProduct = CatalogProduct & {
   specs: Array<{ label: string; value: string }>;
 };
 
@@ -40,8 +30,9 @@ const FALLBACK_CATEGORIES: HomeCategory[] = [
   { slug: "prp-kits", name: "PRP & kits", productCount: 22 },
 ];
 
-const FALLBACK_BEST_SELLERS: HomeProduct[] = [
+const FALLBACK_BEST_SELLERS: CatalogProduct[] = [
   {
+    id: "synvisc-one",
     slug: "synvisc-one",
     name: "Synvisc-One",
     brand: "Sanofi",
@@ -52,6 +43,7 @@ const FALLBACK_BEST_SELLERS: HomeProduct[] = [
     categoryLabel: "Orthopaedic",
   },
   {
+    id: "prolia-60mg",
     slug: "prolia-60mg",
     name: "Prolia 60 mg",
     brand: "Amgen",
@@ -62,6 +54,7 @@ const FALLBACK_BEST_SELLERS: HomeProduct[] = [
     categoryLabel: "Bone health",
   },
   {
+    id: "juvederm-ultra-xc",
     slug: "juvederm-ultra-xc",
     name: "Juvéderm Ultra XC",
     brand: "Allergan Aesthetics",
@@ -72,6 +65,7 @@ const FALLBACK_BEST_SELLERS: HomeProduct[] = [
     categoryLabel: "Dermal filler",
   },
   {
+    id: "botox-100u",
     slug: "botox-100u",
     name: "Botox 100 U",
     brand: "Allergan Aesthetics",
@@ -84,6 +78,7 @@ const FALLBACK_BEST_SELLERS: HomeProduct[] = [
 ];
 
 const FALLBACK_HERO_PRODUCT: HeroProduct = {
+  id: "juvederm-voluma-xc",
   slug: "juvederm-voluma-xc",
   name: "Juvéderm Voluma XC",
   brand: "Allergan Aesthetics",
@@ -131,7 +126,7 @@ export async function getHomeCategories(): Promise<HomeCategory[]> {
   }
 }
 
-export async function getBestSellers(): Promise<HomeProduct[]> {
+export async function getBestSellers(): Promise<CatalogProduct[]> {
   if (!isSupabaseConfigured()) return FALLBACK_BEST_SELLERS;
 
   try {
@@ -139,7 +134,7 @@ export async function getBestSellers(): Promise<HomeProduct[]> {
     const { data: products, error } = await admin
       .from("products")
       .select(
-        "slug, name, sku, price, stock_quantity, specs, brands(name), categories(name)"
+        "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, brands(name), categories(name)"
       )
       .eq("featured", true)
       .eq("is_in_stock", true)
@@ -147,7 +142,7 @@ export async function getBestSellers(): Promise<HomeProduct[]> {
 
     if (error || !products || products.length === 0) return FALLBACK_BEST_SELLERS;
 
-    return products.map((p): HomeProduct => {
+    return products.map((p): CatalogProduct => {
       // specs is stored as an ordered [{label, value}] array — jsonb objects
       // don't preserve key insertion order, so a plain dict would scramble it.
       const specs = (p.specs ?? []) as Array<{ label: string; value: string }>;
@@ -155,13 +150,14 @@ export async function getBestSellers(): Promise<HomeProduct[]> {
       const brand = Array.isArray(p.brands) ? p.brands[0]?.name : (p.brands as { name: string } | null)?.name;
       const category = Array.isArray(p.categories) ? p.categories[0]?.name : (p.categories as { name: string } | null)?.name;
       return {
+        id: p.id,
         slug: p.slug,
         name: p.name,
         brand: brand ?? null,
         price: Number(p.price),
         sku: p.sku,
         specLine: specLine || "",
-        stockLabel: (p.stock_quantity ?? 999) <= 10 ? "low-stock" : "in-stock",
+        stockLabel: !p.is_in_stock ? "out-of-stock" : (p.stock_quantity ?? 999) <= 10 ? "low-stock" : "in-stock",
         categoryLabel: category ?? "",
       };
     });
