@@ -61,13 +61,18 @@ export default function Hero({ product }: { product: HeroProduct }) {
 function SpecCard({ product }: { product: HeroProduct }) {
   return (
     <article className="bg-card border border-line-strong rounded-[4px] overflow-hidden shadow-[0_1px_0_var(--color-line),0_24px_48px_-32px_rgba(8,40,32,0.4)]">
-      <div className="h-[180px] bg-gradient-to-b from-teal-tint to-transparent border-b border-line flex items-end justify-center relative">
+      <div
+        className={cn(
+          "h-[220px] border-b border-line flex items-end justify-center relative",
+          product.image ? "bg-card" : "bg-gradient-to-b from-teal-tint to-transparent"
+        )}
+      >
         {product.image ? (
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-contain p-6"
+            className="object-contain p-4"
             sizes="420px"
             priority
           />

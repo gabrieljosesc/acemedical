@@ -21,13 +21,13 @@ export default function ProductGallery({
 
   return (
     <div>
-      <div className="bg-card border border-line-strong rounded-[4px] aspect-[4/5] relative overflow-hidden bg-gradient-to-b from-teal-tint to-transparent">
+      <div className="bg-card border border-line-strong rounded-[4px] aspect-[4/5] relative overflow-hidden">
         <span className="absolute top-4 left-4 eyebrow z-10">{categoryLabel}</span>
         <Image
           src={images[active]}
           alt={name}
           fill
-          className="object-contain p-8"
+          className="object-contain p-4"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority
         />
