@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight, ShieldCheck, Truck, ClipboardCheck } from "lucide-react";
 import { getProductBySlug, getRelatedProducts } from "@/lib/shop-products";
 import { formatPrice } from "@/lib/utils";
-import ProductVisual from "@/components/product/ProductVisual";
+import ProductGallery from "@/components/product/ProductGallery";
 import AddToOrder from "@/components/product/AddToOrder";
 import ProductCard from "@/components/products/ProductCard";
 
@@ -57,7 +57,7 @@ export default async function ProductPage({ params }: Props) {
       </nav>
 
       <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
-        <ProductVisual categoryLabel={product.categoryLabel} />
+        <ProductGallery images={product.images} name={product.name} categoryLabel={product.categoryLabel} />
 
         <div>
           {product.categorySlug && (

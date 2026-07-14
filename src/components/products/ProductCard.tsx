@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import type { CatalogProduct } from "@/lib/types";
 
@@ -32,9 +33,19 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
           />
           {STOCK_COPY[stockLabel]}
         </span>
-        <div className="w-[34px] h-[74px] border-[1.5px] border-teal rounded-[3px] bg-teal/10 relative">
-          <span className="absolute left-1.5 right-1.5 top-3 h-0.5 bg-teal opacity-55 shadow-[0_7px_0_var(--color-teal),0_14px_0_var(--color-teal)]" />
-        </div>
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 768px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="w-[34px] h-[74px] border-[1.5px] border-teal rounded-[3px] bg-teal/10 relative">
+            <span className="absolute left-1.5 right-1.5 top-3 h-0.5 bg-teal opacity-55 shadow-[0_7px_0_var(--color-teal),0_14px_0_var(--color-teal)]" />
+          </div>
+        )}
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint mb-1.5">

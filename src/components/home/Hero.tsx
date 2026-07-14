@@ -1,6 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ShieldCheck, Truck, ClipboardCheck, Plus } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import type { HeroProduct } from "@/lib/home-data";
 
 export default function Hero({ product }: { product: HeroProduct }) {
@@ -61,12 +62,23 @@ function SpecCard({ product }: { product: HeroProduct }) {
   return (
     <article className="bg-card border border-line-strong rounded-[4px] overflow-hidden shadow-[0_1px_0_var(--color-line),0_24px_48px_-32px_rgba(8,40,32,0.4)]">
       <div className="h-[180px] bg-gradient-to-b from-teal-tint to-transparent border-b border-line flex items-end justify-center relative">
-        <div className="w-[52px] h-[150px] relative -mb-px">
-          <span className="absolute left-4 right-4 top-0 h-5 bg-teal rounded-[3px]" />
-          <span className="absolute left-5 right-5 top-5 h-[18px] bg-teal/20 border-x border-t border-teal" />
-          <span className="absolute left-2 right-2 top-[34px] bottom-0 bg-teal/[0.22] border border-teal rounded-t-[6px] rounded-b-[8px]" />
-          <span className="absolute left-2.5 right-2.5 bottom-[3px] h-16 bg-teal/85 rounded-[3px]" />
-        </div>
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-contain p-6"
+            sizes="420px"
+            priority
+          />
+        ) : (
+          <div className="w-[52px] h-[150px] relative -mb-px">
+            <span className="absolute left-4 right-4 top-0 h-5 bg-teal rounded-[3px]" />
+            <span className="absolute left-5 right-5 top-5 h-[18px] bg-teal/20 border-x border-t border-teal" />
+            <span className="absolute left-2 right-2 top-[34px] bottom-0 bg-teal/[0.22] border border-teal rounded-t-[6px] rounded-b-[8px]" />
+            <span className="absolute left-2.5 right-2.5 bottom-[3px] h-16 bg-teal/85 rounded-[3px]" />
+          </div>
+        )}
       </div>
 
       <div className="px-5.5 pt-5 pb-5.5">
@@ -74,25 +86,51 @@ function SpecCard({ product }: { product: HeroProduct }) {
           <span className="eyebrow">
             {product.categoryLabel} · {product.sku}
           </span>
-          <span className="font-mono text-[10px] tracking-wide px-2.5 py-0.5 rounded-full bg-stock-bg text-stock inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-stock" />
-            In stock
+          <span
+            className={cn(
+              "font-mono text-[10px] tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5",
+              product.stockLabel === "in-stock"
+                ? "bg-stock-bg text-stock"
+                : product.stockLabel === "low-stock"
+                  ? "bg-low-bg text-low"
+                  : "bg-line text-ink-faint"
+            )}
+          >
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                product.stockLabel === "in-stock"
+                  ? "bg-stock"
+                  : product.stockLabel === "low-stock"
+                    ? "bg-low"
+                    : "bg-ink-faint"
+              )}
+            />
+            {product.stockLabel === "in-stock"
+              ? "In stock"
+              : product.stockLabel === "low-stock"
+                ? "Low stock"
+                : "Out of stock"}
           </span>
         </div>
 
-        <h3 className="font-serif text-[23px] tracking-tight mb-0.5">{product.name}</h3>
-        <p className="text-[13px] text-ink-faint mb-4">{product.brand}</p>
-
-        <div className="grid grid-cols-2 gap-px bg-line border border-line rounded-[3px] overflow-hidden mb-4.5">
-          {product.specs.map((s) => (
-            <div key={s.label} className="bg-card px-3 py-2.5">
-              <div className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint mb-0.5">
-                {s.label}
-              </div>
-              <div className="font-mono text-[14px] text-ink tabular">{s.value}</div>
-            </div>
-          ))}
+        <div className="mb-4">
+          <h3 className="font-serif text-[23px] tracking-tight">{product.name}</h3>
+          {product.brand && <p className="text-[13px] text-ink-faint mt-0.5">{product.brand}</p>}
         </div>
+
+        {product.specs.length > 0 && (
+          <div className="grid grid-cols-2 gap-px bg-line border border-line rounded-[3px] overflow-hidden mb-4.5">
+            {product.specs.map((s) => (
+              <div key={s.label} className="bg-card px-3 py-2.5">
+                <div className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint mb-0.5">
+                  {s.label}
+                </div>
+                <div className="font-mono text-[14px] text-ink tabular">{s.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-3.5">
           <div className="font-mono tabular">
