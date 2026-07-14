@@ -41,6 +41,8 @@ const PRODUCTS = [
     category: "dermal-fillers",
     brand: "allergan-aesthetics",
     featured: true,
+    description:
+      "A hyaluronic acid filler formulated for deep injection to add volume and contour to the cheek area, correcting age-related volume loss.",
     specs: [
       spec("Volume", "2 × 1.0 mL"),
       spec("HA conc.", "20 mg/mL"),
@@ -57,6 +59,8 @@ const PRODUCTS = [
     category: "dermal-fillers",
     brand: "allergan-aesthetics",
     featured: true,
+    description:
+      "A smooth-consistency HA gel for lip augmentation and correction of moderate to severe facial wrinkles and folds, such as nasolabial folds.",
     specs: [spec("Volume", "2 × 1.0 mL"), spec("HA conc.", "24 mg/mL"), spec("Lidocaine", "0.3%")],
   },
   {
@@ -68,6 +72,8 @@ const PRODUCTS = [
     category: "dermal-fillers",
     brand: "galderma",
     featured: false,
+    description:
+      "A stabilized HA filler indicated for mid-face volume restoration and cheek augmentation, with the firm support needed for structural lift.",
     specs: [spec("Volume", "1 × 1.0 mL"), spec("HA conc.", "20 mg/mL")],
   },
   {
@@ -79,6 +85,8 @@ const PRODUCTS = [
     category: "orthopaedic-injectables",
     brand: "sanofi",
     featured: true,
+    description:
+      "A single-injection viscosupplement for knee osteoarthritis, providing joint lubrication and cushioning to relieve pain for up to six months.",
     specs: [spec("Volume", "1 × 6 mL"), spec("Compound", "hylan G-F 20"), spec("Route", "intra-articular")],
   },
   {
@@ -90,6 +98,8 @@ const PRODUCTS = [
     category: "orthopaedic-injectables",
     brand: "amgen",
     featured: true,
+    description:
+      "A twice-yearly injection that reduces bone breakdown to increase bone mass and lower fracture risk in patients with osteoporosis.",
     specs: [spec("Volume", "1 × 1.0 mL"), spec("Compound", "denosumab"), spec("Format", "pre-filled")],
   },
   {
@@ -101,6 +111,8 @@ const PRODUCTS = [
     category: "botulinum-toxins",
     brand: "allergan-aesthetics",
     featured: true,
+    description:
+      "A purified neurotoxin that temporarily relaxes targeted facial muscles, softening moderate to severe frown lines, crow's feet, and forehead lines.",
     specs: [spec("Format", "1 vial"), spec("Units", "100 units"), spec("Compound", "onabotulinumtoxinA")],
   },
   {
@@ -112,6 +124,8 @@ const PRODUCTS = [
     category: "botulinum-toxins",
     brand: "merz",
     featured: false,
+    description:
+      "A precise, 'naked' formulation of botulinum toxin type A with no accessory proteins, used to treat glabellar lines and other dynamic wrinkles.",
     specs: [spec("Format", "1 vial"), spec("Units", "100 units"), spec("Compound", "incobotulinumtoxinA")],
   },
   {
@@ -123,6 +137,8 @@ const PRODUCTS = [
     category: "pdo-threads",
     brand: null,
     featured: false,
+    description:
+      "Fine absorbable threads placed just beneath the skin to stimulate collagen production and improve skin texture and firmness.",
     specs: [spec("Pack", "30 threads"), spec("Gauge", "29G"), spec("Length", "38 mm")],
   },
   {
@@ -134,6 +150,8 @@ const PRODUCTS = [
     category: "pdo-threads",
     brand: null,
     featured: false,
+    description:
+      "Barbed absorbable threads that grip and lift sagging tissue for a non-surgical brow, jawline, or mid-face lift with a gradual collagen-building effect.",
     specs: [spec("Pack", "10 threads"), spec("Gauge", "19G"), spec("Length", "100 mm")],
   },
   {
@@ -145,6 +163,8 @@ const PRODUCTS = [
     category: "anaesthetics",
     brand: null,
     featured: false,
+    description:
+      "A local anaesthetic solution used to numb the injection site prior to filler, thread, or other aesthetic procedures.",
     specs: [spec("Volume", "1 × 50 mL"), spec("Concentration", "2%")],
   },
   {
@@ -156,6 +176,8 @@ const PRODUCTS = [
     category: "dermal-fillers",
     brand: "merz",
     featured: false,
+    description:
+      "A calcium hydroxylapatite filler that adds volume on injection and stimulates the body's own collagen production over time.",
     specs: [spec("Volume", "1 × 1.5 mL"), spec("Compound", "CaHA")],
   },
   {
@@ -167,6 +189,8 @@ const PRODUCTS = [
     category: "mesotherapy-peels",
     brand: null,
     featured: false,
+    description:
+      "A trichloroacetic acid chemical peel for superficial resurfacing, improving mild pigmentation, fine lines, and skin texture.",
     specs: [spec("Volume", "30 mL"), spec("Concentration", "15%")],
   },
   {
@@ -178,6 +202,8 @@ const PRODUCTS = [
     category: "mesotherapy-peels",
     brand: null,
     featured: false,
+    description:
+      "A multi-vitamin and amino acid blend for micro-injection, used to revitalize skin tone and hydration in mesotherapy protocols.",
     specs: [spec("Pack", "10 × 5 mL")],
   },
   {
@@ -189,6 +215,8 @@ const PRODUCTS = [
     category: "weight-management",
     brand: null,
     featured: false,
+    description:
+      "A GLP-1 receptor agonist compounded for weight management protocols, dosed weekly under physician supervision.",
     specs: [spec("Strength", "5 mg"), spec("Format", "multi-dose vial")],
   },
   {
@@ -200,6 +228,8 @@ const PRODUCTS = [
     category: "prp-kits",
     brand: null,
     featured: false,
+    description:
+      "A complete single-spin kit for preparing platelet-rich plasma chairside, used in hair restoration and skin rejuvenation treatments.",
     specs: [spec("Pack", "10 kits"), spec("Yield", "8-10 mL PRP")],
   },
   {
@@ -211,6 +241,8 @@ const PRODUCTS = [
     category: "prp-kits",
     brand: null,
     featured: false,
+    description:
+      "Double-spin separator tubes that yield a more concentrated platelet fraction than single-spin systems, for advanced PRP protocols.",
     specs: [spec("Pack", "20 tubes")],
   },
 ];
@@ -246,6 +278,7 @@ async function main() {
         category_id,
         brand_id,
         featured: p.featured,
+        description: p.description,
         specs: p.specs,
         images: [],
       },
