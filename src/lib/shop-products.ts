@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import type { CatalogProduct } from "@/lib/types";
+import type { CatalogProduct, ProductDetail } from "@/lib/types";
 
 export type ShopSort = "latest" | "best-selling" | "price_asc" | "price_desc" | "name_asc";
 
@@ -141,4 +141,51 @@ export async function getCategoryBySlug(slug: string) {
   const admin = createAdminClient();
   const { data } = await admin.from("categories").select("slug, name, description").eq("slug", slug).single();
   return data;
+}
+
+export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("products")
+    .select(
+      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, description, brands(name), categories(name, slug)"
+    )
+    .eq("slug", slug)
+    .single();
+
+  if (error || !data) return null;
+
+  const catalog = mapRow(data);
+  const specs = (data.specs ?? []) as Array<{ label: string; value: string }>;
+  const category = Array.isArray(data.categories) ? data.categories[0] : data.categories;
+
+  return {
+    ...catalog,
+    description: data.description ?? null,
+    categorySlug: category?.slug ?? "",
+    specs,
+  };
+}
+
+export async function getRelatedProducts(
+  categorySlug: string,
+  excludeId: string,
+  limit = 4
+): Promise<CatalogProduct[]> {
+  if (!isSupabaseConfigured() || !categorySlug) return [];
+
+  const admin = createAdminClient();
+  const { data: category } = await admin.from("categories").select("id").eq("slug", categorySlug).single();
+  if (!category) return [];
+
+  const { data } = await admin
+    .from("products")
+    .select("id, slug, name, sku, price, stock_quantity, is_in_stock, specs, brands(name), categories(name)")
+    .eq("category_id", category.id)
+    .neq("id", excludeId)
+    .limit(limit);
+
+  return (data ?? []).map(mapRow);
 }

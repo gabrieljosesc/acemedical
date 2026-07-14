@@ -11,3 +11,9 @@ export type CatalogProduct = {
   stockLabel: StockLabel;
   categoryLabel: string;
 };
+
+export type ProductDetail = CatalogProduct & {
+  description: string | null;
+  categorySlug: string;
+  specs: Array<{ label: string; value: string }>;
+};
