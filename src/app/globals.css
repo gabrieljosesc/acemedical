@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   Ace Medical Wholesale — "Clinical precision" theme (Option A)
+   Porcelain ground · Surgical teal · Graphite-green ink · Amber prices
+   ============================================================ */
+
+@theme {
+  /* Grounds & surfaces */
+  --color-ground: #f2f4ef;
+  --color-surface: #fbfbf8;
+  --color-card: #ffffff;
+
+  /* Ink (graphite-green text ramp) */
+  --color-ink: #10231e;
+  --color-ink-soft: #4b5a53;
+  --color-ink-faint: #79877e;
+
+  /* Hairlines */
+  --color-line: #dae0d6;
+  --color-line-strong: #c6cdbf;
+
+  /* Brand */
+  --color-teal: #0c5b50;
+  --color-teal-deep: #083e37;
+  --color-teal-tint: #e4efea;
+
+  /* Emphasis (prices only) */
+  --color-amber: #a2641a;
+  --color-amber-soft: #f1e5cd;
+
+  /* Status */
+  --color-stock: #1f7a4d;
+  --color-stock-bg: #e5f0e7;
+  --color-low: #a2641a;
+  --color-low-bg: #f1e5cd;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
