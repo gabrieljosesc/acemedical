@@ -25,12 +25,14 @@ export default function ShopFilters({
   categories,
   brands,
   hideCategoryFilter,
+  hideBrandFilter,
 }: {
   pathname: string;
   current: ShopParams;
   categories: ShopFilterOption[];
   brands: ShopFilterOption[];
   hideCategoryFilter?: boolean;
+  hideBrandFilter?: boolean;
 }) {
   const hasFilters = Boolean(
     current.search || current.category || current.brand || current.min_price || current.max_price
@@ -79,7 +81,7 @@ export default function ShopFilters({
       {!hideCategoryFilter && (
         <div className="border-t border-line pt-5">
           <h3 className="text-[13px] font-medium text-ink mb-2.5">Category</h3>
-          <ul className="space-y-1">
+          <ul className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
             {categories.map((cat) => {
               const active = current.category === cat.slug;
               return (
@@ -99,10 +101,10 @@ export default function ShopFilters({
         </div>
       )}
 
-      {brands.length > 0 && (
+      {!hideBrandFilter && brands.length > 0 && (
         <div className="border-t border-line pt-5">
           <h3 className="text-[13px] font-medium text-ink mb-2.5">Brand</h3>
-          <ul className="space-y-1">
+          <ul className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
             {brands.map((b) => {
               const active = current.brand === b.slug;
               return (

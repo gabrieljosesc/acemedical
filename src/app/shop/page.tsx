@@ -32,7 +32,7 @@ export default async function ShopPage({
 
   const [{ products, count }, { categories, brands }] = await Promise.all([
     getShopProducts({ search, category, brand, min_price, max_price, sort, page, pageSize: PAGE_SIZE }),
-    getShopFilterOptions(),
+    getShopFilterOptions(category),
   ]);
 
   return (
@@ -58,6 +58,7 @@ export default async function ShopPage({
         count={count}
         categories={categories}
         brands={brands}
+        hideBrandFilter={!category}
       />
     </div>
   );

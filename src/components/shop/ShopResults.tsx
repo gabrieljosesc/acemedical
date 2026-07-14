@@ -15,6 +15,7 @@ export default function ShopResults({
   categories,
   brands,
   hideCategoryFilter,
+  hideBrandFilter,
 }: {
   pathname: string;
   current: ShopParams;
@@ -25,6 +26,7 @@ export default function ShopResults({
   categories: ShopFilterOption[];
   brands: ShopFilterOption[];
   hideCategoryFilter?: boolean;
+  hideBrandFilter?: boolean;
 }) {
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
   const from = count === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -38,6 +40,7 @@ export default function ShopResults({
         categories={categories}
         brands={brands}
         hideCategoryFilter={hideCategoryFilter}
+        hideBrandFilter={hideBrandFilter}
       />
 
       <div className="flex-1 min-w-0">
