@@ -46,13 +46,18 @@ export default function Navbar() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2 bg-card border border-line rounded-sm px-3 py-2 w-[210px] text-ink-faint">
+            <form
+              action="/shop"
+              method="get"
+              className="hidden md:flex items-center gap-2 bg-card border border-line rounded-sm px-3 py-2 w-[210px] text-ink-faint focus-within:border-teal transition-colors"
+            >
               <Search size={15} className="shrink-0" />
               <input
+                name="search"
                 placeholder="Search products or SKU"
                 className="border-0 bg-transparent outline-none text-[13.5px] text-ink w-full placeholder:text-ink-faint"
               />
-            </div>
+            </form>
             <button className="hidden sm:inline-flex items-center gap-2 border border-line bg-card rounded-sm px-3 py-2 text-[13px] text-ink hover:border-line-strong transition-colors">
               Trade login
             </button>
