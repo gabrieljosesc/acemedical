@@ -1,0 +1,144 @@
+import { createAdminClient } from "@/lib/supabase/server";
+import type { CatalogProduct } from "@/lib/types";
+
+export type ShopSort = "latest" | "best-selling" | "price_asc" | "price_desc" | "name_asc";
+
+export interface ShopFilterParams {
+  search?: string;
+  category?: string; // category slug
+  brand?: string; // brand slug
+  min_price?: string;
+  max_price?: string;
+  sort?: ShopSort;
+  page?: number;
+  pageSize?: number;
+}
+
+export type ShopFilterOption = { slug: string; name: string };
+
+function isSupabaseConfigured() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+function mapRow(row: {
+  id: string;
+  slug: string;
+  name: string;
+  sku: string | null;
+  price: number | string;
+  stock_quantity: number | null;
+  is_in_stock: boolean;
+  specs: unknown;
+  brands: { name: string } | { name: string }[] | null;
+  categories: { name: string } | { name: string }[] | null;
+}): CatalogProduct {
+  const specs = (row.specs ?? []) as Array<{ label: string; value: string }>;
+  const specLine = specs.map((s) => s.value).join(" · ");
+  const brand = Array.isArray(row.brands) ? row.brands[0]?.name : row.brands?.name;
+  const category = Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name;
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    brand: brand ?? null,
+    price: Number(row.price),
+    sku: row.sku,
+    specLine: specLine || "",
+    stockLabel: !row.is_in_stock
+      ? "out-of-stock"
+      : (row.stock_quantity ?? 999) <= 10
+        ? "low-stock"
+        : "in-stock",
+    categoryLabel: category ?? "",
+  };
+}
+
+export async function getShopProducts(
+  filters: ShopFilterParams
+): Promise<{ products: CatalogProduct[]; count: number }> {
+  if (!isSupabaseConfigured()) return { products: [], count: 0 };
+
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = filters.pageSize ?? 12;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+
+  const admin = createAdminClient();
+
+  let categoryId: string | undefined;
+  if (filters.category) {
+    const { data } = await admin.from("categories").select("id").eq("slug", filters.category).single();
+    categoryId = data?.id;
+    if (!categoryId) return { products: [], count: 0 };
+  }
+
+  let brandId: string | undefined;
+  if (filters.brand) {
+    const { data } = await admin.from("brands").select("id").eq("slug", filters.brand).single();
+    brandId = data?.id;
+    if (!brandId) return { products: [], count: 0 };
+  }
+
+  let query = admin
+    .from("products")
+    .select(
+      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, featured, brands(name), categories(name)",
+      { count: "exact" }
+    );
+
+  if (filters.search) query = query.ilike("name", `%${filters.search}%`);
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (brandId) query = query.eq("brand_id", brandId);
+  if (filters.min_price) query = query.gte("price", Number(filters.min_price));
+  if (filters.max_price) query = query.lte("price", Number(filters.max_price));
+
+  switch (filters.sort) {
+    case "price_asc":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price_desc":
+      query = query.order("price", { ascending: false });
+      break;
+    case "name_asc":
+      query = query.order("name", { ascending: true });
+      break;
+    case "best-selling":
+      query = query.order("featured", { ascending: false }).order("created_at", { ascending: false });
+      break;
+    default:
+      query = query.order("created_at", { ascending: false });
+  }
+
+  const { data, count, error } = await query.range(start, end);
+  if (error || !data) return { products: [], count: 0 };
+
+  return { products: data.map(mapRow), count: count ?? 0 };
+}
+
+export async function getShopFilterOptions(): Promise<{
+  categories: ShopFilterOption[];
+  brands: ShopFilterOption[];
+}> {
+  if (!isSupabaseConfigured()) return { categories: [], brands: [] };
+
+  const admin = createAdminClient();
+  const [{ data: categories }, { data: brands }] = await Promise.all([
+    admin.from("categories").select("slug, name").is("parent_id", null).order("sort_order"),
+    admin.from("brands").select("slug, name").order("name"),
+  ]);
+
+  return {
+    categories: categories ?? [],
+    brands: brands ?? [],
+  };
+}
+
+export async function getCategoryBySlug(slug: string) {
+  if (!isSupabaseConfigured()) return null;
+  const admin = createAdminClient();
+  const { data } = await admin.from("categories").select("slug, name, description").eq("slug", slug).single();
+  return data;
+}
