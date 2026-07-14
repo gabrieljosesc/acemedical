@@ -251,24 +251,33 @@ create policy "Admins can manage applications" on public.trade_applications for 
 -- SEED: Categories
 -- ============================================================
 insert into public.categories (name, slug, sort_order) values
-  ('Dermal Fillers',           'dermal-fillers',           1),
-  ('Orthopaedic Injectables',  'orthopaedic-injectables',  2),
-  ('Botulinum Toxins',         'botulinum-toxins',         3),
-  ('PDO Threads',              'pdo-threads',               4),
-  ('Anaesthetics',             'anaesthetics',              5),
-  ('Mesotherapy & Peels',      'mesotherapy-peels',        6),
-  ('Weight Management',        'weight-management',        7),
-  ('PRP & Kits',               'prp-kits',                  8)
+  ('Rheumatology',           'rheumatology',           10),
+  ('Ophthalmology',          'ophthalmology',          20),
+  ('Skincare',                'skincare',                30),
+  ('Peels and Masks',        'peels-and-masks',        40),
+  ('Dermal Fillers',          'dermal-fillers',          50),
+  ('Botulinum Toxins',        'botulinum-toxins',        60),
+  ('Gynecology',              'gynecology',              70),
+  ('Body Sculpting',          'body-sculpting',          80),
+  ('Osteoporosis',            'osteoporosis',            90),
+  ('Fat Removal',             'fat-removal',            100),
+  ('Mesotherapy',             'mesotherapy',            110),
+  ('Orthopedic Injections',   'orthopedic-injections',  120),
+  ('Peptides',                'peptides',               125),
+  ('Dermal Filler Removal',   'dermal-filler-removal',  130),
+  ('Anaesthetics',            'anaesthetics',           140),
+  ('Weight Loss',             'weight-loss',            150),
+  ('Cannulas and Needles',    'cannulas-and-needles',   160),
+  ('Asthma',                  'asthma',                 170),
+  ('Threads',                 'threads',                180),
+  ('Eyelash Enhancers',       'eyelash-enhancers',      190),
+  ('PRP Kits',                'prp-kits',               200),
+  ('Other',                   'other',                  999)
 on conflict (slug) do nothing;
 
 -- ============================================================
 -- SEED: Brands
 -- ============================================================
-insert into public.brands (name, slug) values
-  ('Allergan Aesthetics', 'allergan-aesthetics'),
-  ('Sanofi',               'sanofi'),
-  ('Amgen',                'amgen'),
-  ('Galderma',             'galderma'),
-  ('Merz',                 'merz'),
-  ('Ipsen',                'ipsen')
-on conflict (slug) do nothing;
+-- Brands are not a bootstrap concern here — they're derived from product
+-- titles (anything marked with ® or ™) by scripts/migrate-from-peakmedical.mjs
+-- and inserted programmatically alongside the products that reference them.
