@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search } from "lucide-react";
+import { getAuthUser } from "@/lib/supabase/auth";
+import CartBadge from "@/components/layout/CartBadge";
+import SignOutButton from "@/components/layout/SignOutButton";
 
 const NAV_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
@@ -9,7 +12,11 @@ const NAV_LINKS = [
   { href: "/shop", label: "Brands" },
 ];
 
-export default function Navbar() {
+export default async function Navbar() {
+  const user = await getAuthUser();
+  const firstName =
+    (user?.user_metadata?.first_name as string | undefined) || user?.email?.split("@")[0];
+
   return (
     <div className="sticky top-0 z-50">
       <div className="bg-teal-deep text-[#EAF4F0] font-mono text-[11.5px] tracking-wide">
@@ -58,16 +65,24 @@ export default function Navbar() {
                 className="border-0 bg-transparent outline-none text-[13.5px] text-ink w-full placeholder:text-ink-faint"
               />
             </form>
-            <button className="hidden sm:inline-flex items-center gap-2 border border-line bg-card rounded-sm px-3 py-2 text-[13px] text-ink hover:border-line-strong transition-colors">
-              Trade login
-            </button>
-            <button className="inline-flex items-center gap-2 border border-line bg-card rounded-sm px-3 py-2 text-[13px] text-ink hover:border-line-strong transition-colors">
-              <ShoppingCart size={16} />
-              <span className="hidden sm:inline">Cart</span>
-              <span className="font-mono text-[10px] bg-teal text-white rounded-full px-1.5 py-0.5 leading-none">
-                0
-              </span>
-            </button>
+
+            {user ? (
+              <div className="hidden sm:flex items-center gap-3 pr-1">
+                <span className="text-[13px] text-ink-soft">
+                  Hi, <span className="text-ink font-medium">{firstName}</span>
+                </span>
+                <SignOutButton />
+              </div>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="hidden sm:inline-flex items-center gap-2 border border-line bg-card rounded-sm px-3 py-2 text-[13px] text-ink hover:border-line-strong transition-colors"
+              >
+                Trade login
+              </Link>
+            )}
+
+            <CartBadge />
           </div>
         </div>
       </header>
