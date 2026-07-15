@@ -37,10 +37,7 @@ export default function ProfileForm({
   }
 
   return (
-    <div className="mx-auto max-w-[720px] px-5 py-16 sm:py-20">
-      <p className="eyebrow">Trade account</p>
-      <h1 className="font-serif font-medium text-[30px] tracking-tight mt-2 mb-8">My account</h1>
-
+    <div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {error && (
           <p className="text-[13.5px] text-low bg-low-bg border border-low/30 rounded-sm px-3.5 py-3">{error}</p>
