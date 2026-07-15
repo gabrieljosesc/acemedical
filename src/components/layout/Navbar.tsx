@@ -1,21 +1,22 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { getAuthUser } from "@/lib/supabase/auth";
+import { getShopFilterOptions } from "@/lib/shop-products";
 import CartBadge from "@/components/layout/CartBadge";
-import SignOutButton from "@/components/layout/SignOutButton";
+import AccountMenu from "@/components/layout/AccountMenu";
+import CategoriesMenu from "@/components/layout/CategoriesMenu";
 
 const NAV_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
   { href: "/shop/botulinum-toxins", label: "Botulinum toxins" },
   { href: "/shop/orthopedic-injections", label: "Orthopedic" },
   { href: "/shop/threads", label: "Threads" },
-  { href: "/shop", label: "Brands" },
 ];
 
 export default async function Navbar() {
-  const user = await getAuthUser();
+  const [user, { categories }] = await Promise.all([getAuthUser(), getShopFilterOptions()]);
   const firstName =
-    (user?.user_metadata?.first_name as string | undefined) || user?.email?.split("@")[0];
+    (user?.user_metadata?.first_name as string | undefined) || user?.email?.split("@")[0] || "";
 
   return (
     <div className="sticky top-0 z-50">
@@ -40,7 +41,7 @@ export default async function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden lg:flex gap-5 ml-2">
+          <nav className="hidden lg:flex items-center gap-5 ml-2">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -50,6 +51,7 @@ export default async function Navbar() {
                 {l.label}
               </Link>
             ))}
+            <CategoriesMenu categories={categories} />
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
@@ -67,12 +69,7 @@ export default async function Navbar() {
             </form>
 
             {user ? (
-              <div className="hidden sm:flex items-center gap-3 pr-1">
-                <span className="text-[13px] text-ink-soft">
-                  Hi, <span className="text-ink font-medium">{firstName}</span>
-                </span>
-                <SignOutButton />
-              </div>
+              <AccountMenu firstName={firstName} />
             ) : (
               <Link
                 href="/auth/login"
