@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { CartProvider } from "@/hooks/useCart";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -57,10 +58,12 @@ export default function RootLayout({
       className={`${fraunces.variable} ${hanken.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-ground text-ink">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <Toaster position="top-right" richColors />
+        <CartProvider>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <Toaster position="top-right" richColors />
+        </CartProvider>
       </body>
     </html>
   );

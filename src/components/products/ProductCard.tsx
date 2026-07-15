@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import type { CatalogProduct } from "@/lib/types";
+import AddToCartButton from "@/components/products/AddToCartButton";
 
 const STOCK_COPY: Record<CatalogProduct["stockLabel"], string> = {
   "in-stock": "In stock",
@@ -63,9 +64,12 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
         )}
         <div className="mt-auto pt-3.5 flex items-center justify-between gap-2.5">
           <span className="font-mono tabular text-[19px] text-amber">{formatPrice(product.price)}</span>
-          <span className="border border-teal text-teal rounded-sm px-3.5 py-2 text-[12.5px] font-medium group-hover:bg-teal group-hover:text-[#F4FBF8] transition-colors">
+          <AddToCartButton
+            product={product}
+            className="border border-teal text-teal rounded-sm px-3.5 py-2 text-[12.5px] font-medium hover:bg-teal hover:text-[#F4FBF8] transition-colors"
+          >
             Add
-          </span>
+          </AddToCartButton>
         </div>
       </div>
     </Link>

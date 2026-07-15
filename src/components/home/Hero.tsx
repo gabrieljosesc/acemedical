@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight, ShieldCheck, Truck, ClipboardCheck, Plus } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import type { HeroProduct } from "@/lib/home-data";
+import AddToCartButton from "@/components/products/AddToCartButton";
 
 export default function Hero({ product }: { product: HeroProduct }) {
   return (
@@ -144,10 +145,13 @@ function SpecCard({ product }: { product: HeroProduct }) {
               per box · trade net
             </span>
           </div>
-          <button className="bg-teal text-[#F4FBF8] rounded-sm px-5 py-3 font-medium text-[14px] inline-flex gap-2 items-center hover:bg-teal-deep transition-colors">
+          <AddToCartButton
+            product={product}
+            className="bg-teal text-[#F4FBF8] rounded-sm px-5 py-3 font-medium text-[14px] inline-flex gap-2 items-center hover:bg-teal-deep transition-colors"
+          >
             Add to order
             <Plus size={15} />
-          </button>
+          </AddToCartButton>
         </div>
       </div>
     </article>

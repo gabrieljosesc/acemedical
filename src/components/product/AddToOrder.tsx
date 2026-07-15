@@ -4,13 +4,28 @@ import { useState } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
+import { useCart } from "@/hooks/useCart";
+import type { ProductDetail } from "@/lib/types";
 
-export default function AddToOrder({ name, price }: { name: string; price: number }) {
+export default function AddToOrder({ product }: { product: ProductDetail }) {
+  const { addToCart } = useCart();
   const [qty, setQty] = useState(1);
-  const lineTotal = qty * price;
+  const lineTotal = qty * product.price;
 
   function handleAdd() {
-    toast.success(`${qty} × ${name} added to order`);
+    addToCart(
+      {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        image: product.image,
+        sku: product.sku,
+      },
+      qty
+    );
+    toast.success(`${qty} × ${product.name} added to order`);
   }
 
   return (
@@ -46,7 +61,8 @@ export default function AddToOrder({ name, price }: { name: string; price: numbe
       </div>
       {qty > 1 && (
         <p className="font-mono tabular text-[13px] text-ink-soft mt-2.5">
-          {qty} × {formatPrice(price)} = <span className="text-ink font-medium">{formatPrice(lineTotal)}</span>
+          {qty} × {formatPrice(product.price)} ={" "}
+          <span className="text-ink font-medium">{formatPrice(lineTotal)}</span>
         </p>
       )}
     </div>

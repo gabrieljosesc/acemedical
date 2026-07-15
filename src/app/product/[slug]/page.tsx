@@ -99,7 +99,7 @@ export default async function ProductPage({ params }: Props) {
             {stockCopy}
           </span>
 
-          <AddToOrder name={product.name} price={product.price} />
+          <AddToOrder product={product} />
 
           {product.sku && <p className="font-mono text-[11.5px] text-ink-faint mt-4">SKU: {product.sku}</p>}
 
