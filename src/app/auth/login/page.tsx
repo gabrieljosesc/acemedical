@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import PasswordField from "@/components/auth/PasswordField";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,17 +55,13 @@ export default function LoginPage() {
           />
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-medium text-ink">Password</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border border-line rounded-sm px-3 py-2.5 text-[14px] bg-card outline-none focus:border-teal transition-colors"
-            placeholder="••••••••"
-          />
-        </label>
+        <PasswordField
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          required
+          autoComplete="current-password"
+        />
 
         <button
           type="submit"
