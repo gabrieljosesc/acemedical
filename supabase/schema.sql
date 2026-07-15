@@ -181,42 +181,52 @@ create table if not exists public.trade_applications (
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
 
+-- Admin check as a SECURITY DEFINER function, not a raw subquery on
+-- profiles inline in each policy. A policy on `profiles` that queries
+-- `profiles` again forces Postgres to re-evaluate that same policy to
+-- answer the subquery — infinite recursion (error 42P17). Every other
+-- table's "admin" policy has the same problem transitively, since it
+-- queries profiles too. SECURITY DEFINER runs with the function
+-- owner's privileges, bypassing RLS on the query inside it, breaking
+-- the recursion.
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 -- Profiles
 alter table public.profiles enable row level security;
 create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
-create policy "Admins can view all profiles" on public.profiles for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can view all profiles" on public.profiles for select using (public.is_admin());
 
 -- Products (public read, admin write)
 alter table public.products enable row level security;
 create policy "Anyone can view products" on public.products for select using (true);
-create policy "Admins can manage products" on public.products for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage products" on public.products for all using (public.is_admin());
 
 -- Categories (public read, admin write)
 alter table public.categories enable row level security;
 create policy "Anyone can view categories" on public.categories for select using (true);
-create policy "Admins can manage categories" on public.categories for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage categories" on public.categories for all using (public.is_admin());
 
 -- Brands (public read, admin write)
 alter table public.brands enable row level security;
 create policy "Anyone can view brands" on public.brands for select using (true);
-create policy "Admins can manage brands" on public.brands for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage brands" on public.brands for all using (public.is_admin());
 
 -- Orders (users see own, admins see all)
 alter table public.orders enable row level security;
 create policy "Users can view own orders" on public.orders for select using (auth.uid() = user_id);
 create policy "Anyone can insert order" on public.orders for insert with check (true);
-create policy "Admins can manage orders" on public.orders for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage orders" on public.orders for all using (public.is_admin());
 
 -- Order items
 alter table public.order_items enable row level security;
@@ -224,9 +234,7 @@ create policy "Users can view own order items" on public.order_items for select 
   exists (select 1 from public.orders where id = order_id and user_id = auth.uid())
 );
 create policy "Anyone can insert order items" on public.order_items for insert with check (true);
-create policy "Admins can manage order items" on public.order_items for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage order items" on public.order_items for all using (public.is_admin());
 
 -- Wishlist
 alter table public.wishlist_items enable row level security;
@@ -235,17 +243,13 @@ create policy "Users manage own wishlist" on public.wishlist_items for all using
 -- Contact messages (insert only from public, admins can read)
 alter table public.contact_messages enable row level security;
 create policy "Anyone can submit contact" on public.contact_messages for insert with check (true);
-create policy "Admins can read messages" on public.contact_messages for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can read messages" on public.contact_messages for select using (public.is_admin());
 
 -- Trade applications (users manage their own, admins review all)
 alter table public.trade_applications enable row level security;
 create policy "Users can view own application" on public.trade_applications for select using (auth.uid() = user_id);
 create policy "Users can submit application" on public.trade_applications for insert with check (true);
-create policy "Admins can manage applications" on public.trade_applications for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);
+create policy "Admins can manage applications" on public.trade_applications for all using (public.is_admin());
 
 -- ============================================================
 -- SEED: Categories
