@@ -46,11 +46,18 @@ export default function AccountMenu({ firstName }: { firstName: string }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[180px] bg-card border border-line rounded-sm shadow-[0_12px_28px_-12px_rgba(8,40,32,0.25)] py-1.5 z-50">
           <Link
-            href="/account"
+            href="/account/profile"
             onClick={() => setOpen(false)}
             className="block px-4 py-2 text-[13.5px] text-ink hover:bg-surface transition-colors"
           >
             My account
+          </Link>
+          <Link
+            href="/account/orders"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-[13.5px] text-ink hover:bg-surface transition-colors"
+          >
+            My orders
           </Link>
           <button
             type="button"

@@ -13,6 +13,12 @@ type Prefill = {
   recipientName: string;
   company: string;
   phone: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
 };
 
 export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
@@ -24,12 +30,12 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [shipping, setShipping] = useState({
     recipientName: prefill.recipientName,
     company: prefill.company,
-    line1: "",
-    line2: "",
-    city: "",
-    state: "",
-    zip: "",
-    country: "US",
+    line1: prefill.line1,
+    line2: prefill.line2,
+    city: prefill.city,
+    state: prefill.state,
+    zip: prefill.zip,
+    country: prefill.country || "US",
     phone: prefill.phone,
   });
   const [card, setCard] = useState({ number: "", expMonth: "", expYear: "", cvv: "", nameOnCard: "" });
