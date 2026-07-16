@@ -122,6 +122,8 @@ create table if not exists public.products (
   description       text,
   short_description text,
   price             numeric(12,2) not null default 0,
+  -- Quantity-tier pricing, e.g. [{"minQ":1,"maxQ":3,"price":599}]
+  price_tiers       jsonb not null default '[]',
   sale_price        numeric(12,2),
   sku               text,
   stock_quantity    int,
