@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, ShieldCheck, Truck, ClipboardCheck } from "lucide-react";
+import { ChevronRight, ShieldCheck, Truck, ClipboardCheck, FileText } from "lucide-react";
 import { getProductBySlug, getRelatedProducts } from "@/lib/shop-products";
+import { getDoseSiblings } from "@/lib/peptide-doses";
 import { formatPrice } from "@/lib/utils";
 import { tierQuantityLabel } from "@/lib/price-tiers";
 import ProductGallery from "@/components/product/ProductGallery";
@@ -27,7 +28,10 @@ export default async function ProductPage({ params }: Props) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product.categorySlug, product.id, 4);
+  const [related, doseOptions] = await Promise.all([
+    getRelatedProducts(product.categorySlug, product.id, 4),
+    getDoseSiblings(product.categorySlug, product.name, product.slug),
+  ]);
 
   const stockCopy =
     product.stockLabel === "in-stock"
@@ -102,6 +106,33 @@ export default async function ProductPage({ params }: Props) {
             {stockCopy}
           </span>
 
+          {doseOptions.length > 0 && (
+            <div className="mb-5">
+              <p className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint mb-2">Strength</p>
+              <div className="flex flex-wrap gap-2">
+                {doseOptions.map((opt) =>
+                  opt.current ? (
+                    <span
+                      key={opt.slug}
+                      aria-current="true"
+                      className="font-mono tabular text-[13px] rounded-sm bg-teal text-[#F4FBF8] px-3.5 py-1.5"
+                    >
+                      {opt.dose}
+                    </span>
+                  ) : (
+                    <Link
+                      key={opt.slug}
+                      href={`/product/${opt.slug}`}
+                      className="font-mono tabular text-[13px] rounded-sm border border-line-strong text-ink-soft px-3.5 py-1.5 hover:border-teal hover:text-teal transition-colors"
+                    >
+                      {opt.dose}
+                    </Link>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
           {product.priceTiers.length > 0 && (
             <div className="border border-line rounded-[3px] overflow-hidden mb-5 max-w-[340px]">
               <p className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint bg-surface border-b border-line px-3.5 py-2">
@@ -123,6 +154,18 @@ export default async function ProductPage({ params }: Props) {
           <AddToOrder product={product} />
 
           {product.sku && <p className="font-mono text-[11.5px] text-ink-faint mt-4">SKU: {product.sku}</p>}
+
+          {product.coaUrl && (
+            <a
+              href={product.coaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-4 border border-line-strong rounded-sm px-4 py-2.5 text-[13px] font-medium text-ink hover:border-teal hover:text-teal transition-colors"
+            >
+              <FileText size={15} className="text-teal" />
+              Certificate of Analysis (PDF)
+            </a>
+          )}
 
           <ul className="flex flex-col gap-2 border-t border-line mt-6 pt-5 text-[13px] text-ink-soft">
             <li className="flex items-center gap-2">
