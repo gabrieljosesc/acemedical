@@ -6,6 +6,8 @@ import { CartProvider } from "@/hooks/useCart";
 import { WishlistProvider } from "@/hooks/useWishlist";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import FloatingCart from "@/components/layout/FloatingCart";
+import NavigationProgress from "@/components/layout/NavigationProgress";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -64,6 +66,8 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <FloatingCart />
+          <NavigationProgress />
           <Toaster position="top-right" richColors />
           </WishlistProvider>
         </CartProvider>

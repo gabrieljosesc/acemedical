@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { getAuthUser, getAdminUser } from "@/lib/supabase/auth";
 import { getShopFilterOptions } from "@/lib/shop-products";
 import CartBadge from "@/components/layout/CartBadge";
+import SearchBar from "@/components/layout/SearchBar";
+import MobileMenu from "@/components/layout/MobileMenu";
 import WishlistBadge from "@/components/layout/WishlistBadge";
 import AccountMenu from "@/components/layout/AccountMenu";
 import CategoriesMenu from "@/components/layout/CategoriesMenu";
@@ -57,18 +58,7 @@ export default async function Navbar() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <form
-              action="/shop"
-              method="get"
-              className="hidden md:flex items-center gap-2 bg-card border border-line rounded-sm px-3 py-2 w-[210px] text-ink-faint focus-within:border-teal transition-colors"
-            >
-              <Search size={15} className="shrink-0" />
-              <input
-                name="search"
-                placeholder="Search products or SKU"
-                className="border-0 bg-transparent outline-none text-[13.5px] text-ink w-full placeholder:text-ink-faint"
-              />
-            </form>
+            <SearchBar />
 
             {user ? (
               <AccountMenu firstName={firstName} isAdmin={!!adminUser} />
@@ -83,6 +73,7 @@ export default async function Navbar() {
 
             <WishlistBadge />
             <CartBadge />
+            <MobileMenu categories={categories} signedIn={!!user} />
           </div>
         </div>
       </header>
