@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { validateCardNumber, validateExpiry, validateCvv, last4 } from "@/lib/card-validation";
 import { encryptCardField } from "@/lib/payment-card-crypto";
 import { calculateShipping } from "@/lib/shipping";
+import { meetsCheckoutMinimumUsd, MIN_CHECKOUT_SUBTOTAL_USD } from "@/lib/cart-minimum";
 import { parsePriceTiers, unitPriceForQuantity } from "@/lib/price-tiers";
 import { sendOrderReceivedEmail, sendAdminNewOrderEmail } from "@/lib/email/order-emails";
 
@@ -118,6 +119,12 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
 
   const subtotal = orderItems.reduce((sum, i) => sum + i.total_price, 0);
+  if (!meetsCheckoutMinimumUsd(subtotal)) {
+    return {
+      ok: false,
+      message: `Orders have a \$${MIN_CHECKOUT_SUBTOTAL_USD} minimum — your subtotal is below that.`,
+    };
+  }
   const shippingAmount = calculateShipping(subtotal);
   const total = subtotal + shippingAmount;
 

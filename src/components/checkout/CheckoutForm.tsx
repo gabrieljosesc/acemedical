@@ -8,6 +8,8 @@ import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import { lineUnitPrice } from "@/lib/cart";
 import { calculateShipping } from "@/lib/shipping";
+import { meetsCheckoutMinimumUsd } from "@/lib/cart-minimum";
+import CartMinimumBar from "@/components/cart/CartMinimumBar";
 import { placeOrder } from "@/app/actions/orders";
 
 type Prefill = {
@@ -61,6 +63,7 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
 
   const shippingAmount = calculateShipping(subtotal);
   const total = subtotal + shippingAmount;
+  const minimumMet = meetsCheckoutMinimumUsd(subtotal);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -142,6 +145,8 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
         <aside className="w-full lg:w-[340px] shrink-0">
           <div className="bg-card border border-line rounded-[4px] p-5 lg:sticky lg:top-24">
             <h2 className="eyebrow mb-4">Order summary</h2>
+
+            <CartMinimumBar amountUsd={subtotal} />
             <ul className="flex flex-col gap-2.5 mb-4 pb-4 border-b border-line max-h-[220px] overflow-y-auto pr-1">
               {items.map((item) => (
                 <li key={item.id} className="flex justify-between gap-3 text-[13px]">
@@ -171,7 +176,7 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !minimumMet}
               className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors mt-5 disabled:opacity-60"
             >
               {submitting ? "Placing order…" : "Place order"}

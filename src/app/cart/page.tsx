@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import { calculateShipping, FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 import CartLineItem from "@/components/cart/CartLineItem";
+import CartMinimumBar from "@/components/cart/CartMinimumBar";
+import { meetsCheckoutMinimumUsd, MIN_CHECKOUT_SUBTOTAL_USD } from "@/lib/cart-minimum";
 
 export default function CartPage() {
   const { items, subtotal } = useCart();
@@ -31,6 +33,7 @@ export default function CartPage() {
 
   const shipping = calculateShipping(subtotal);
   const total = subtotal + shipping;
+  const minimumMet = meetsCheckoutMinimumUsd(subtotal);
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
 
   return (
@@ -47,6 +50,8 @@ export default function CartPage() {
         <aside className="w-full lg:w-[340px] shrink-0">
           <div className="bg-card border border-line rounded-[4px] p-5 lg:sticky lg:top-24">
             <h2 className="eyebrow mb-4">Order summary</h2>
+
+            <CartMinimumBar amountUsd={subtotal} />
 
             {remainingForFreeShipping > 0 ? (
               <p className="text-[12.5px] text-ink-soft mb-4 pb-4 border-b border-line">
@@ -75,13 +80,22 @@ export default function CartPage() {
               <span className="font-mono tabular text-[22px] text-amber">{formatPrice(total)}</span>
             </div>
 
-            <Link
-              href="/checkout"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors mt-5"
-            >
-              Proceed to checkout
-              <ArrowRight size={16} />
-            </Link>
+            {minimumMet ? (
+              <Link
+                href="/checkout"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors mt-5"
+              >
+                Proceed to checkout
+                <ArrowRight size={16} />
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-line text-ink-faint font-medium text-[14.5px] px-5.5 py-3.5 mt-5 cursor-not-allowed"
+              >
+                {formatPrice(MIN_CHECKOUT_SUBTOTAL_USD)} minimum to checkout
+              </span>
+            )}
 
             <p className="text-[11.5px] text-ink-faint text-center mt-3">
               Trade-net pricing shown. Verified accounts unlock volume tiers.
