@@ -3,6 +3,7 @@ import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import type { CatalogProduct } from "@/lib/types";
 import AddToCartButton from "@/components/products/AddToCartButton";
+import WishlistButton from "@/components/products/WishlistButton";
 
 const STOCK_COPY: Record<CatalogProduct["stockLabel"], string> = {
   "in-stock": "In stock",
@@ -51,6 +52,11 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
           />
           {STOCK_COPY[stockLabel]}
         </span>
+        <WishlistButton
+          productId={product.id}
+          productName={product.name}
+          className="absolute top-2 right-2 z-10 bg-card/85 rounded-full p-1.5"
+        />
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint mb-1.5">

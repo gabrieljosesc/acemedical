@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { getAuthUser, getAdminUser } from "@/lib/supabase/auth";
 import { getShopFilterOptions } from "@/lib/shop-products";
 import CartBadge from "@/components/layout/CartBadge";
+import WishlistBadge from "@/components/layout/WishlistBadge";
 import AccountMenu from "@/components/layout/AccountMenu";
 import CategoriesMenu from "@/components/layout/CategoriesMenu";
 
@@ -80,6 +81,7 @@ export default async function Navbar() {
               </Link>
             )}
 
+            <WishlistBadge />
             <CartBadge />
           </div>
         </div>

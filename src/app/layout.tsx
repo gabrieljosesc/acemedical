@@ -3,6 +3,7 @@ import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { CartProvider } from "@/hooks/useCart";
+import { WishlistProvider } from "@/hooks/useWishlist";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -59,10 +60,12 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-ground text-ink">
         <CartProvider>
+          <WishlistProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
           <Toaster position="top-right" richColors />
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>
