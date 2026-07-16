@@ -158,6 +158,10 @@ create table if not exists public.orders (
   customer_name    text,
   customer_email   text,
   notes            text,
+  -- Admin order management
+  admin_notes            text,
+  customer_visible_note  text,
+  payment_update_requested_at timestamptz,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
