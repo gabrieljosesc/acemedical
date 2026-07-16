@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Minus, Plus, X } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
-import type { CartItem } from "@/lib/cart";
+import { lineUnitPrice, type CartItem } from "@/lib/cart";
 
 export default function CartLineItem({ item }: { item: CartItem }) {
   const { updateQuantity, removeFromCart } = useCart();
@@ -65,7 +65,12 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             </button>
           </div>
           <span className="font-mono tabular text-[16px] text-amber">
-            {formatPrice(item.price * item.quantity)}
+            {formatPrice(lineUnitPrice(item) * item.quantity)}
+            {lineUnitPrice(item) < item.price && (
+              <span className="block text-[10px] text-stock text-right">
+                {formatPrice(lineUnitPrice(item))}/unit volume price
+              </span>
+            )}
           </span>
         </div>
       </div>

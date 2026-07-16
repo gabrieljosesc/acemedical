@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { validateCardNumber, validateExpiry, validateCvv, last4 } from "@/lib/card-validation";
 import { encryptCardField } from "@/lib/payment-card-crypto";
 import { calculateShipping } from "@/lib/shipping";
+import { parsePriceTiers, unitPriceForQuantity } from "@/lib/price-tiers";
 import { sendOrderReceivedEmail, sendAdminNewOrderEmail } from "@/lib/email/order-emails";
 
 const REFERENCE_FLOOR = 100000;
@@ -82,7 +83,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const productIds = input.items.map((i) => i.productId);
   const { data: products, error: productsError } = await admin
     .from("products")
-    .select("id, name, price, images")
+    .select("id, name, price, price_tiers, images")
     .in("id", productIds);
 
   if (productsError || !products || products.length === 0) {
@@ -94,13 +95,20 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     .map((item) => {
       const product = productById.get(item.productId);
       if (!product) return null;
+      // Volume pricing: unit price comes from the matching quantity tier,
+      // recomputed server-side — never trust client-submitted prices.
+      const unitPrice = unitPriceForQuantity(
+        parsePriceTiers(product.price_tiers),
+        item.quantity,
+        Number(product.price)
+      );
       return {
         product_id: product.id,
         product_name: product.name,
         product_image: (product.images ?? [])[0] ?? null,
         quantity: item.quantity,
-        unit_price: Number(product.price),
-        total_price: Number(product.price) * item.quantity,
+        unit_price: unitPrice,
+        total_price: unitPrice * item.quantity,
       };
     })
     .filter((i): i is NonNullable<typeof i> => i !== null);

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, ShoppingCart } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
+import { lineUnitPrice } from "@/lib/cart";
 import { calculateShipping } from "@/lib/shipping";
 import { placeOrder } from "@/app/actions/orders";
 
@@ -147,7 +148,7 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
                   <span className="text-ink-soft truncate">
                     {item.quantity} × {item.name}
                   </span>
-                  <span className="font-mono tabular shrink-0">{formatPrice(item.price * item.quantity)}</span>
+                  <span className="font-mono tabular shrink-0">{formatPrice(lineUnitPrice(item) * item.quantity)}</span>
                 </li>
               ))}
             </ul>

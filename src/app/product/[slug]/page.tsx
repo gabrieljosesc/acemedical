@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { ChevronRight, ShieldCheck, Truck, ClipboardCheck } from "lucide-react";
 import { getProductBySlug, getRelatedProducts } from "@/lib/shop-products";
 import { formatPrice } from "@/lib/utils";
+import { tierQuantityLabel } from "@/lib/price-tiers";
 import ProductGallery from "@/components/product/ProductGallery";
 import AddToOrder from "@/components/product/AddToOrder";
 import ProductCard from "@/components/products/ProductCard";
+import WishlistButton from "@/components/products/WishlistButton";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -76,6 +78,7 @@ export default async function ProductPage({ params }: Props) {
           <div className="flex items-center gap-3 mb-5">
             <span className="font-mono tabular text-[28px] text-amber">{formatPrice(product.price)}</span>
             <span className="font-mono text-[11px] text-ink-faint tracking-wide">per unit · trade net</span>
+            <WishlistButton productId={product.id} productName={product.name} className="ml-auto border border-line rounded-sm p-2" />
           </div>
 
           <span
@@ -99,6 +102,24 @@ export default async function ProductPage({ params }: Props) {
             {stockCopy}
           </span>
 
+          {product.priceTiers.length > 0 && (
+            <div className="border border-line rounded-[3px] overflow-hidden mb-5 max-w-[340px]">
+              <p className="font-mono text-[9.5px] tracking-wide uppercase text-ink-faint bg-surface border-b border-line px-3.5 py-2">
+                Volume pricing
+              </p>
+              <ul className="divide-y divide-line">
+                {product.priceTiers.map((t) => (
+                  <li key={t.minQ} className="flex justify-between px-3.5 py-2 text-[13px]">
+                    <span className="text-ink-soft font-mono tabular">{tierQuantityLabel(t)} units</span>
+                    <span className="font-mono tabular text-ink">
+                      {formatPrice(t.price)} <span className="text-ink-faint">/ unit</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <AddToOrder product={product} />
 
           {product.sku && <p className="font-mono text-[11.5px] text-ink-faint mt-4">SKU: {product.sku}</p>}
@@ -114,7 +135,7 @@ export default async function ProductPage({ params }: Props) {
             </li>
             <li className="flex items-center gap-2">
               <ClipboardCheck size={16} className="text-teal shrink-0" />
-              Trade-net pricing shown — log in for volume tiers
+              Trade-net pricing with volume tiers on eligible products
             </li>
           </ul>
 

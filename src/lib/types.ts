@@ -1,3 +1,5 @@
+import type { PriceTier } from "@/lib/price-tiers";
+
 export type StockLabel = "in-stock" | "low-stock" | "out-of-stock";
 
 export type CatalogProduct = {
@@ -11,6 +13,7 @@ export type CatalogProduct = {
   stockLabel: StockLabel;
   categoryLabel: string;
   image: string | null;
+  priceTiers: PriceTier[];
 };
 
 export type ProductDetail = CatalogProduct & {

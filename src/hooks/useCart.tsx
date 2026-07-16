@@ -25,6 +25,7 @@ type CartContextValue = {
       price: number;
       image: string | null;
       sku: string | null;
+      priceTiers?: import("@/lib/price-tiers").PriceTier[];
     },
     quantity?: number
   ) => void;

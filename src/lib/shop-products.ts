@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import type { CatalogProduct, ProductDetail } from "@/lib/types";
+import { parsePriceTiers } from "@/lib/price-tiers";
 
 export type ShopSort = "latest" | "best-selling" | "price_asc" | "price_desc" | "name_asc";
 
@@ -17,7 +18,7 @@ export interface ShopFilterParams {
 export type ShopFilterOption = { slug: string; name: string };
 
 const PRODUCT_FIELDS =
-  "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
+  "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
 
 function isSupabaseConfigured() {
   return Boolean(
@@ -34,6 +35,7 @@ export function mapRow(row: {
   stock_quantity: number | null;
   is_in_stock: boolean;
   specs: unknown;
+  price_tiers?: unknown;
   images: string[] | null;
   brands: { name: string } | { name: string }[] | null;
   categories: { name: string } | { name: string }[] | null;
@@ -58,6 +60,7 @@ export function mapRow(row: {
         : "in-stock",
     categoryLabel: category ?? "",
     image: row.images?.[0] ?? null,
+    priceTiers: parsePriceTiers(row.price_tiers),
   };
 }
 
@@ -171,7 +174,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const { data, error } = await admin
     .from("products")
     .select(
-      "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, description, brands(name), categories(name, slug)"
+      "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, description, brands(name), categories(name, slug)"
     )
     .eq("slug", slug)
     .single();

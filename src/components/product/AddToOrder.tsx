@@ -5,12 +5,14 @@ import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
+import { unitPriceForQuantity } from "@/lib/price-tiers";
 import type { ProductDetail } from "@/lib/types";
 
 export default function AddToOrder({ product }: { product: ProductDetail }) {
   const { addToCart } = useCart();
   const [qty, setQty] = useState(1);
-  const lineTotal = qty * product.price;
+  const unitPrice = unitPriceForQuantity(product.priceTiers, qty, product.price);
+  const lineTotal = qty * unitPrice;
 
   function handleAdd() {
     addToCart(
@@ -22,6 +24,7 @@ export default function AddToOrder({ product }: { product: ProductDetail }) {
         price: product.price,
         image: product.image,
         sku: product.sku,
+        priceTiers: product.priceTiers,
       },
       qty
     );
@@ -61,8 +64,11 @@ export default function AddToOrder({ product }: { product: ProductDetail }) {
       </div>
       {qty > 1 && (
         <p className="font-mono tabular text-[13px] text-ink-soft mt-2.5">
-          {qty} × {formatPrice(product.price)} ={" "}
+          {qty} × {formatPrice(unitPrice)} ={" "}
           <span className="text-ink font-medium">{formatPrice(lineTotal)}</span>
+          {unitPrice < product.price && (
+            <span className="text-stock"> · volume price applied</span>
+          )}
         </p>
       )}
     </div>

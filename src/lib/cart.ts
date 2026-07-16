@@ -1,3 +1,5 @@
+import { unitPriceForQuantity, type PriceTier } from "@/lib/price-tiers";
+
 export type CartItem = {
   id: string; // client-generated line id
   productId: string;
@@ -8,6 +10,7 @@ export type CartItem = {
   image: string | null;
   sku: string | null;
   quantity: number;
+  priceTiers?: PriceTier[];
 };
 
 const STORAGE_KEY = "acemedical_cart";
@@ -42,6 +45,7 @@ export function addToCart(
     price: number;
     image: string | null;
     sku: string | null;
+    priceTiers?: PriceTier[];
   },
   quantity: number
 ): CartItem[] {
@@ -61,6 +65,7 @@ export function addToCart(
       image: product.image,
       sku: product.sku,
       quantity,
+      priceTiers: product.priceTiers ?? [],
     });
   }
 
@@ -91,6 +96,11 @@ export function cartCount(items: CartItem[]): number {
   return items.reduce((sum, i) => sum + i.quantity, 0);
 }
 
+/** Tier-aware unit price for a cart line (volume pricing). */
+export function lineUnitPrice(item: CartItem): number {
+  return unitPriceForQuantity(item.priceTiers ?? [], item.quantity, item.price);
+}
+
 export function cartSubtotal(items: CartItem[]): number {
-  return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  return items.reduce((sum, i) => sum + lineUnitPrice(i) * i.quantity, 0);
 }

@@ -13,7 +13,7 @@ export type HeroProduct = CatalogProduct & {
 };
 
 const PRODUCT_FIELDS =
-  "id, slug, name, sku, price, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
+  "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
 
 function isSupabaseConfigured() {
   return Boolean(
@@ -41,6 +41,7 @@ const FALLBACK_HERO_PRODUCT: HeroProduct = {
   stockLabel: "in-stock",
   categoryLabel: "Dermal filler",
   image: null,
+  priceTiers: [],
   specs: [
     { label: "Volume", value: "2 × 1.0 mL" },
     { label: "HA conc.", value: "20 mg/mL" },
