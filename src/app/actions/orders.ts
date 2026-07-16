@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { validateCardNumber, validateExpiry, validateCvv, last4 } from "@/lib/card-validation";
 import { encryptCardField } from "@/lib/payment-card-crypto";
 import { calculateShipping } from "@/lib/shipping";
+import { sendOrderReceivedEmail, sendAdminNewOrderEmail } from "@/lib/email/order-emails";
 
 const REFERENCE_FLOOR = 100000;
 
@@ -169,6 +170,23 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       console.error("placeOrder items insert error:", itemsError);
       return { ok: false, message: "We couldn't save your order items. Please contact support." };
     }
+
+    // Awaited (not fire-and-forget): serverless functions can freeze after
+    // the response is sent, so the emails must complete before returning.
+    // Both sends never throw — a mail failure can't break order placement.
+    const orderSummary = {
+      id: order.id,
+      reference_number: referenceNumber,
+      customer_name: input.shipping.recipientName,
+      customer_email: user.email ?? null,
+      subtotal,
+      shipping_amount: shippingAmount,
+      total,
+    };
+    await Promise.allSettled([
+      sendOrderReceivedEmail(orderSummary, orderItems),
+      sendAdminNewOrderEmail(orderSummary, orderItems),
+    ]);
 
     return { ok: true, referenceNumber };
   }
