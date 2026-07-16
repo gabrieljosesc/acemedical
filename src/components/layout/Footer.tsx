@@ -18,6 +18,7 @@ const ACCOUNT_LINKS = [
 ];
 
 const SUPPORT_LINKS = [
+  { href: "/about", label: "About us" },
   { href: "/shipping", label: "Shipping & cold-chain" },
   { href: "/returns", label: "Returns & recalls" },
   { href: "/authenticity", label: "Authenticity policy" },
