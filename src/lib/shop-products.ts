@@ -216,7 +216,9 @@ export async function getRelatedProducts(
   return (data ?? []).map(mapRow);
 }
 
-export async function getTopBrands(limit = 8): Promise<ShopFilterOption[]> {
+export type TopBrand = ShopFilterOption & { count: number };
+
+export async function getTopBrands(limit = 8): Promise<TopBrand[]> {
   if (!isSupabaseConfigured()) return [];
 
   const admin = createAdminClient();
@@ -229,7 +231,7 @@ export async function getTopBrands(limit = 8): Promise<ShopFilterOption[]> {
       name: b.name,
       count: Array.isArray(b.products) ? (b.products[0]?.count ?? 0) : 0,
     }))
+    .filter((b) => b.count > 0)
     .sort((a, b) => b.count - a.count)
-    .slice(0, limit)
-    .map(({ slug, name }) => ({ slug, name }));
+    .slice(0, limit);
 }

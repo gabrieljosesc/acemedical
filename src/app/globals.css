@@ -62,3 +62,14 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Trusted-brands slideshow: the track holds two copies of the card list
+   and slides half its own width, so the loop is seamless. */
+@keyframes brand-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
