@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ChevronRight, Package } from "lucide-react";
+import { ChevronRight, Package, AlertTriangle, CheckCircle2, MessageSquare } from "lucide-react";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
@@ -24,11 +24,18 @@ type OrderItem = {
   product: { slug: string } | { slug: string }[] | null;
 };
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment_updated?: string }>;
+}) {
   const user = await getAuthUser();
   if (!user) return null;
 
   const { id } = await params;
+  const { payment_updated } = await searchParams;
   const supabase = await createClient();
   const { data: order } = await supabase
     .from("orders")
@@ -42,6 +49,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const status: OrderStatus = isOrderStatus(order.status) ? order.status : "pending";
   const shipping = (order.shipping_address ?? {}) as Record<string, string>;
   const items = (order.items ?? []) as OrderItem[];
+  const paymentUpdateNeeded = Boolean(order.payment_update_requested_at) && status !== "cancelled";
 
   return (
     <div>
@@ -69,6 +77,37 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           })}
         </span>
       </div>
+
+      {payment_updated === "1" && (
+        <div className="flex items-start gap-2.5 bg-stock-bg border border-stock/30 rounded-[4px] px-4 py-3.5 mb-5 text-[13.5px] text-stock">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+          <span>New card details received — our team will process payment shortly. Thank you.</span>
+        </div>
+      )}
+
+      {paymentUpdateNeeded && (
+        <div className="flex items-start gap-2.5 bg-low-bg border border-low/30 rounded-[4px] px-4 py-3.5 mb-5 text-[13.5px] text-low">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <span className="font-medium">Action needed:</span> we couldn&apos;t process payment on your card
+            on file.{" "}
+            <Link href={`/account/orders/${order.id}/update-payment`} className="underline font-medium">
+              Update your payment details
+            </Link>{" "}
+            to keep this order moving.
+          </span>
+        </div>
+      )}
+
+      {order.customer_visible_note && (
+        <div className="flex items-start gap-2.5 bg-teal-tint border border-teal/25 rounded-[4px] px-4 py-3.5 mb-5 text-[13.5px] text-teal-deep">
+          <MessageSquare size={16} className="mt-0.5 shrink-0 text-teal" />
+          <span>
+            <span className="font-medium">Message from Ace Medical Wholesale:</span>{" "}
+            {order.customer_visible_note}
+          </span>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
         <div className="flex flex-col gap-5">

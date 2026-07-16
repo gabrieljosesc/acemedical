@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getAdminUser } from "@/lib/supabase/auth";
 import { getShopFilterOptions } from "@/lib/shop-products";
 import CartBadge from "@/components/layout/CartBadge";
 import AccountMenu from "@/components/layout/AccountMenu";
@@ -15,6 +15,7 @@ const NAV_LINKS = [
 
 export default async function Navbar() {
   const [user, { categories }] = await Promise.all([getAuthUser(), getShopFilterOptions()]);
+  const adminUser = user ? await getAdminUser() : null;
   const firstName =
     (user?.user_metadata?.first_name as string | undefined) || user?.email?.split("@")[0] || "";
 
@@ -69,7 +70,7 @@ export default async function Navbar() {
             </form>
 
             {user ? (
-              <AccountMenu firstName={firstName} />
+              <AccountMenu firstName={firstName} isAdmin={!!adminUser} />
             ) : (
               <Link
                 href="/auth/login"

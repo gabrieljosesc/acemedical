@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function AccountMenu({ firstName }: { firstName: string }) {
+export default function AccountMenu({ firstName, isAdmin }: { firstName: string; isAdmin?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -59,6 +59,15 @@ export default function AccountMenu({ firstName }: { firstName: string }) {
           >
             My orders
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin/orders"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-[13.5px] text-teal hover:bg-surface transition-colors"
+            >
+              Admin panel
+            </Link>
+          )}
           <button
             type="button"
             onClick={handleSignOut}
