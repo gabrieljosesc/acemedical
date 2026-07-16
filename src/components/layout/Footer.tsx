@@ -19,6 +19,7 @@ const ACCOUNT_LINKS = [
 
 const SUPPORT_LINKS = [
   { href: "/about", label: "About us" },
+  { href: "/referral", label: "Referral & rewards" },
   { href: "/shipping", label: "Shipping & cold-chain" },
   { href: "/returns", label: "Returns & recalls" },
   { href: "/authenticity", label: "Authenticity policy" },
@@ -32,11 +33,11 @@ export default function Footer() {
       <div className="mx-auto max-w-[1180px] px-5 sm:px-10">
         <div className="grid grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-9 pb-10 border-b border-line">
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-baseline gap-2.5">
+            <Link href="/" className="inline-flex flex-col">
               <span className="font-serif font-semibold text-[23px] tracking-tight text-ink leading-none">
                 Ace<span className="text-teal">Medical</span>
               </span>
-              <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase text-ink-faint border-l border-line-strong pl-2.5">
+              <span className="font-mono text-[9px] uppercase text-ink-faint tracking-[0.53em] -mr-[0.53em] mt-1 leading-none">
                 Wholesale
               </span>
             </Link>

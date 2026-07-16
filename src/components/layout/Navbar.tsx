@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "/shop/botulinum-toxins", label: "Botulinum toxins" },
   { href: "/shop/orthopedic-injections", label: "Orthopedic" },
   { href: "/shop/threads", label: "Threads" },
+  { href: "/peptides", label: "Peptides" },
 ];
 
 export default async function Navbar() {
@@ -35,11 +36,11 @@ export default async function Navbar() {
 
       <header className="bg-ground/90 backdrop-blur-md border-b border-line">
         <div className="mx-auto max-w-[1180px] flex items-center gap-6 px-5 sm:px-10 py-4">
-          <Link href="/" className="flex items-baseline gap-2.5 shrink-0">
+          <Link href="/" className="flex flex-col shrink-0">
             <span className="font-serif font-semibold text-[23px] tracking-tight text-ink leading-none">
               Ace<span className="text-teal">Medical</span>
             </span>
-            <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase text-ink-faint border-l border-line-strong pl-2.5">
+            <span className="font-mono text-[9px] uppercase text-ink-faint tracking-[0.53em] -mr-[0.53em] mt-1 leading-none">
               Wholesale
             </span>
           </Link>
