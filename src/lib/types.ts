@@ -21,4 +21,5 @@ export type ProductDetail = CatalogProduct & {
   categorySlug: string;
   specs: Array<{ label: string; value: string }>;
   images: string[];
+  coaUrl: string | null;
 };

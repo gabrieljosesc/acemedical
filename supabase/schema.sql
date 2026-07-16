@@ -131,6 +131,8 @@ create table if not exists public.products (
   category_id       uuid references public.categories(id) on delete set null,
   brand_id          uuid references public.brands(id) on delete set null,
   images            text[] not null default '{}',
+  -- Certificate of Analysis PDF (public URL in the product-coas bucket)
+  coa_url           text,
   -- Spec sheet shown on the product card, as an ordered array of
   -- {label, value} pairs (jsonb objects don't preserve key order, which
   -- would scramble the spec-grid display) e.g.

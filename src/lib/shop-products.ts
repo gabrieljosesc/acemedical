@@ -174,7 +174,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const { data, error } = await admin
     .from("products")
     .select(
-      "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, description, brands(name), categories(name, slug)"
+      "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, coa_url, description, brands(name), categories(name, slug)"
     )
     .eq("slug", slug)
     .single();
@@ -191,6 +191,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
     categorySlug: category?.slug ?? "",
     specs,
     images: data.images ?? [],
+    coaUrl: data.coa_url ?? null,
   };
 }
 

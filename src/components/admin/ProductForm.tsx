@@ -10,6 +10,7 @@ import {
   createProduct,
   deleteProduct,
   uploadProductImage,
+  uploadProductCoa,
   type ProductFormInput,
 } from "@/app/actions/admin-products";
 import { FormField, FormSelect, FormSection } from "@/components/forms/FormField";
@@ -30,6 +31,7 @@ export default function ProductForm({
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const coaRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     ...initial,
     stockQuantity: initial.stockQuantity === null ? "" : String(initial.stockQuantity),
@@ -39,6 +41,7 @@ export default function ProductForm({
     initial.priceTiers.map((t) => ({ minQ: String(t.minQ), maxQ: String(t.maxQ), price: String(t.price) }))
   );
   const [images, setImages] = useState<string[]>(initial.images);
+  const [coaUrl, setCoaUrl] = useState<string | null>(initial.coaUrl);
   const [pending, startTransition] = useTransition();
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -61,6 +64,7 @@ export default function ProductForm({
       brandId: form.brandId,
       description: form.description,
       images,
+      coaUrl,
     };
   }
 
@@ -109,6 +113,26 @@ export default function ProductForm({
         setImages((prev) => [...prev, result.message!]);
         if (fileRef.current) fileRef.current.value = "";
         toast.success("Image uploaded — save the product to apply.");
+      } else if (!result.ok) {
+        toast.error(result.message);
+      }
+    });
+  }
+
+  function handleCoaUpload() {
+    const file = coaRef.current?.files?.[0];
+    if (!file) {
+      toast.error("Choose a PDF file first.");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("coa", file);
+    startTransition(async () => {
+      const result = await uploadProductCoa(formData);
+      if (result.ok && result.message) {
+        setCoaUrl(result.message);
+        if (coaRef.current) coaRef.current.value = "";
+        toast.success("COA uploaded — save the product to apply.");
       } else if (!result.ok) {
         toast.error(result.message);
       }
@@ -260,6 +284,29 @@ export default function ProductForm({
           Upload image
         </button>
         <p className="text-[11px] text-ink-faint mt-2">First image is the hero. Remember to save after changes.</p>
+
+        <h2 className="eyebrow mt-6 mb-3 pt-5 border-t border-line">Certificate of Analysis</h2>
+        {coaUrl ? (
+          <div className="flex items-center justify-between gap-2 text-[12.5px] mb-2">
+            <a href={coaUrl} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline truncate">
+              View current COA (PDF)
+            </a>
+            <button type="button" onClick={() => setCoaUrl(null)} className="text-low hover:underline shrink-0">
+              Remove
+            </button>
+          </div>
+        ) : (
+          <p className="text-[12.5px] text-ink-faint mb-2">No COA attached.</p>
+        )}
+        <input ref={coaRef} type="file" accept="application/pdf" className="block w-full text-[12px] text-ink-soft mb-2" />
+        <button
+          type="button"
+          onClick={handleCoaUpload}
+          disabled={pending}
+          className="w-full rounded-sm border border-teal text-teal text-[13px] font-medium px-4 py-2 hover:bg-teal hover:text-[#F4FBF8] transition-colors disabled:opacity-60"
+        >
+          Upload COA
+        </button>
       </div>
     </form>
   );

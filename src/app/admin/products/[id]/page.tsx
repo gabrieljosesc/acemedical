@@ -45,6 +45,7 @@ export default async function AdminEditProductPage({ params }: { params: Promise
           brandId: product.brand_id,
           description: product.description ?? "",
           images: product.images ?? [],
+          coaUrl: product.coa_url ?? null,
         }}
         categories={categories ?? []}
         brands={brands ?? []}

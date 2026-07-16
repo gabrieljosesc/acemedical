@@ -23,6 +23,7 @@ export type ProductFormInput = {
   brandId: string | null;
   description: string;
   images: string[];
+  coaUrl: string | null;
 };
 
 function toRow(input: ProductFormInput) {
@@ -39,6 +40,7 @@ function toRow(input: ProductFormInput) {
     brand_id: input.brandId || null,
     description: input.description.trim() || null,
     images: input.images.filter(Boolean),
+    coa_url: input.coaUrl || null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -98,6 +100,35 @@ export async function deleteProduct(id: string): Promise<AdminProductResult> {
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   return { ok: true, message: "Product deleted." };
+}
+
+export async function uploadProductCoa(formData: FormData): Promise<AdminProductResult> {
+  const adminUser = await getAdminUser();
+  if (!adminUser) return { ok: false, message: "Admin access required." };
+
+  const file = formData.get("coa");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Choose a PDF file first." };
+  }
+  if (file.type !== "application/pdf") {
+    return { ok: false, message: "COA must be a PDF." };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { ok: false, message: "PDF must be 5 MB or smaller." };
+  }
+
+  const admin = createAdminClient();
+  const path = `coas/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
+  const { error } = await admin.storage
+    .from("product-coas")
+    .upload(path, file, { contentType: "application/pdf" });
+  if (error) return { ok: false, message: "Upload failed — has supabase/coa.sql been run?" };
+
+  const {
+    data: { publicUrl },
+  } = admin.storage.from("product-coas").getPublicUrl(path);
+
+  return { ok: true, message: publicUrl };
 }
 
 const IMAGE_TYPES: Record<string, string> = {

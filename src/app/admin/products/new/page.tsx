@@ -38,6 +38,7 @@ export default async function AdminNewProductPage() {
           brandId: null,
           description: "",
           images: [],
+          coaUrl: null,
         }}
         categories={categories ?? []}
         brands={brands ?? []}
