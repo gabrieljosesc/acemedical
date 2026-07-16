@@ -61,7 +61,11 @@ export default function Hero({ product }: { product: HeroProduct }) {
 
 function SpecCard({ product }: { product: HeroProduct }) {
   return (
-    <article className="bg-card border border-line-strong rounded-[4px] overflow-hidden shadow-[0_1px_0_var(--color-line),0_24px_48px_-32px_rgba(8,40,32,0.4)]">
+    <Link
+      href={`/product/${product.slug}`}
+      aria-label={`View ${product.name}`}
+      className="block bg-card border border-line-strong rounded-[4px] overflow-hidden shadow-[0_1px_0_var(--color-line),0_24px_48px_-32px_rgba(8,40,32,0.4)] transition-all hover:-translate-y-0.5 hover:border-teal"
+    >
       <div
         className={cn(
           "h-[220px] border-b border-line flex items-end justify-center relative",
@@ -154,6 +158,6 @@ function SpecCard({ product }: { product: HeroProduct }) {
           </AddToCartButton>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
