@@ -25,12 +25,16 @@ export default async function Navbar() {
   return (
     <div className="sticky top-0 z-50">
       <div className="bg-teal-deep text-[#EAF4F0] font-mono text-[11.5px] tracking-wide">
-        <div className="mx-auto max-w-[1180px] flex flex-wrap items-center justify-center gap-6 px-5 sm:px-10 py-2">
-          <span>Free shipping on trade orders over $500</span>
-          <span className="opacity-50">·</span>
-          <span>100% authentic, brand-name stock</span>
-          <span className="opacity-50 hidden sm:inline">·</span>
-          <span className="hidden sm:inline">Cold-chain dispatch within 24 hours</span>
+        <div className="mx-auto max-w-[1180px] flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-5 sm:px-10 py-2">
+          <a href="tel:+18004651525" className="hover:text-[#8FD3C5] transition-colors">
+            1-800-465-1525
+          </a>
+          <span className="order-first w-full text-center sm:order-none sm:w-auto">
+            Free Shipping for all orders over $500!
+          </span>
+          <a href="mailto:info@acemedicalwholesale.com" className="hidden sm:inline hover:text-[#8FD3C5] transition-colors">
+            info@acemedicalwholesale.com
+          </a>
         </div>
       </div>
 

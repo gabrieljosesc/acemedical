@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { submitContactMessage } from "@/app/actions/contact";
 import { FormField } from "@/components/forms/FormField";
@@ -36,11 +36,14 @@ export default function ContactPage() {
       </p>
 
       <div className="flex gap-6 flex-wrap mt-6 font-mono text-[13px] text-ink-soft">
-        <a href="tel:+18005550142" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
-          <Phone size={14} className="text-teal" /> 1-800-555-0142
+        <a href="tel:+18004651525" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
+          <Phone size={14} className="text-teal" /> 1-800-465-1525
         </a>
-        <a href="mailto:orders@acemedicalwholesale.com" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
-          <Mail size={14} className="text-teal" /> orders@acemedicalwholesale.com
+        <span className="inline-flex gap-2 items-center">
+          <Printer size={14} className="text-teal" /> FAX 1-855-809-1511
+        </span>
+        <a href="mailto:info@acemedicalwholesale.com" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
+          <Mail size={14} className="text-teal" /> info@acemedicalwholesale.com
         </a>
       </div>
 

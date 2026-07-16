@@ -2,7 +2,7 @@
 // RESEND_API_KEY is set; otherwise logs and no-ops so order placement
 // and admin actions never fail because email isn't configured yet.
 
-const FROM = process.env.EMAIL_FROM || "Ace Medical Wholesale <orders@acemedicalwholesale.com>";
+const FROM = process.env.EMAIL_FROM || "Ace Medical Wholesale <info@acemedicalwholesale.com>";
 
 export function adminRecipients(): string[] {
   const extra = (process.env.ADMIN_NOTIFY_EMAILS ?? "")

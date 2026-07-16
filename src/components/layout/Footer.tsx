@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Printer } from "lucide-react";
 
 const SHOP_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
@@ -46,13 +46,17 @@ export default function Footer() {
               Authentic brand-name stock, shipped cold-chain nationwide.
             </p>
             <div className="flex flex-col gap-2 mt-4 font-mono text-[12.5px] text-ink-soft">
-              <a href="tel:+18005550142" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
+              <a href="tel:+18004651525" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
                 <Phone size={14} className="text-teal" />
-                1-800-555-0142
+                1-800-465-1525
               </a>
-              <a href="mailto:orders@acemedicalwholesale.com" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
+              <span className="inline-flex gap-2 items-center">
+                <Printer size={14} className="text-teal" />
+                FAX 1-855-809-1511
+              </span>
+              <a href="mailto:info@acemedicalwholesale.com" className="inline-flex gap-2 items-center hover:text-teal transition-colors">
                 <Mail size={14} className="text-teal" />
-                orders@acemedicalwholesale.com
+                info@acemedicalwholesale.com
               </a>
             </div>
           </div>
