@@ -7,6 +7,7 @@ import { getDoseSiblings } from "@/lib/peptide-doses";
 import { formatPrice } from "@/lib/utils";
 import { tierQuantityLabel } from "@/lib/price-tiers";
 import ProductGallery from "@/components/product/ProductGallery";
+import ProductReviews from "@/components/product/ProductReviews";
 import AddToOrder from "@/components/product/AddToOrder";
 import ProductCard from "@/components/products/ProductCard";
 import WishlistButton from "@/components/products/WishlistButton";
@@ -202,6 +203,8 @@ export default async function ProductPage({ params }: Props) {
           )}
         </div>
       </div>
+
+      <ProductReviews productId={product.id} slug={product.slug} />
 
       {related.length > 0 && (
         <section className="mt-16 pt-10 border-t border-line">
