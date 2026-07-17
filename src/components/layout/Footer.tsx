@@ -19,6 +19,7 @@ const ACCOUNT_LINKS = [
 
 const SUPPORT_LINKS = [
   { href: "/about", label: "About us" },
+  { href: "/blog", label: "Blog" },
   { href: "/referral", label: "Referral & rewards" },
   { href: "/shipping", label: "Shipping & cold-chain" },
   { href: "/returns", label: "Returns & recalls" },
