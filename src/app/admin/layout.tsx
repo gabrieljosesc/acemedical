@@ -14,8 +14,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div>
       <div className="bg-ink text-[#F4FBF8]">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-10 flex items-center gap-6 py-3">
-          <span className="font-mono text-[11px] tracking-[0.18em] uppercase text-[#8FD3C5]">Admin</span>
+          <Link href="/admin" className="font-mono text-[11px] tracking-[0.18em] uppercase text-[#8FD3C5]">
+            Admin
+          </Link>
           <nav className="flex items-center gap-5">
+            <Link href="/admin" className="text-[13.5px] hover:text-[#8FD3C5] transition-colors">
+              Dashboard
+            </Link>
             <Link href="/admin/orders" className="text-[13.5px] hover:text-[#8FD3C5] transition-colors">
               Orders
             </Link>
@@ -24,6 +29,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </Link>
             <Link href="/admin/coupons" className="text-[13.5px] hover:text-[#8FD3C5] transition-colors">
               Coupons
+            </Link>
+            <Link href="/admin/blog" className="text-[13.5px] hover:text-[#8FD3C5] transition-colors">
+              Blog
+            </Link>
+            <Link href="/admin/users" className="text-[13.5px] hover:text-[#8FD3C5] transition-colors">
+              Users
             </Link>
           </nav>
           <Link
