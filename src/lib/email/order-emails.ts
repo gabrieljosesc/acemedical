@@ -12,6 +12,8 @@ type OrderSummary = {
   customer_email: string | null;
   subtotal: number;
   shipping_amount?: number | null;
+  discount_amount?: number | null;
+  coupon_code?: string | null;
   total: number;
 };
 
@@ -54,6 +56,12 @@ function itemsTable(items: OrderItemSummary[], order: OrderSummary): string {
     .join("");
 
   const shipping = Number(order.shipping_amount ?? 0);
+  const discount = Number(order.discount_amount ?? 0);
+  const discountRow =
+    discount > 0
+      ? `<tr><td colspan="2" style="padding:2px 0;font-family:Arial,sans-serif;font-size:13px;color:#4B5A53">Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}</td>
+          <td style="padding:2px 0;font-family:Arial,sans-serif;font-size:13px;text-align:right">−${formatPrice(discount)}</td></tr>`
+      : "";
   return `
   <table style="width:100%;border-collapse:collapse;margin:14px 0">
     <tr>
@@ -64,6 +72,7 @@ function itemsTable(items: OrderItemSummary[], order: OrderSummary): string {
     ${rows}
     <tr><td colspan="2" style="padding:8px 0 2px;font-family:Arial,sans-serif;font-size:13px;color:#4B5A53">Subtotal</td>
         <td style="padding:8px 0 2px;font-family:Arial,sans-serif;font-size:13px;text-align:right">${formatPrice(Number(order.subtotal))}</td></tr>
+    ${discountRow}
     <tr><td colspan="2" style="padding:2px 0;font-family:Arial,sans-serif;font-size:13px;color:#4B5A53">Shipping</td>
         <td style="padding:2px 0;font-family:Arial,sans-serif;font-size:13px;text-align:right">${shipping === 0 ? "Free" : formatPrice(shipping)}</td></tr>
     <tr><td colspan="2" style="padding:6px 0;font-family:Arial,sans-serif;font-size:14px;font-weight:bold">Total</td>

@@ -6,23 +6,30 @@ import { encryptCardField } from "@/lib/payment-card-crypto";
 import { calculateShipping } from "@/lib/shipping";
 import { meetsCheckoutMinimumUsd, MIN_CHECKOUT_SUBTOTAL_USD } from "@/lib/cart-minimum";
 import { parsePriceTiers, unitPriceForQuantity } from "@/lib/price-tiers";
+import { couponDiscount } from "@/lib/coupon-discount";
 import { sendOrderReceivedEmail, sendAdminNewOrderEmail } from "@/lib/email/order-emails";
 
 const REFERENCE_FLOOR = 100000;
 
+type Address = {
+  recipientName: string;
+  company: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone: string;
+};
+
 type PlaceOrderInput = {
   items: { productId: string; quantity: number }[];
-  shipping: {
-    recipientName: string;
-    company: string;
-    line1: string;
-    line2: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    phone: string;
-  };
+  shipping: Address;
+  // null/undefined = billing same as shipping
+  billing?: Address | null;
+  couponCode?: string;
+  policyAccepted: boolean;
   card: {
     number: string;
     expMonth: string;
@@ -66,6 +73,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   if (!input.shipping.line1 || !input.shipping.city || !input.shipping.zip) {
     return { ok: false, message: "Please complete the shipping address." };
+  }
+
+  if (input.billing && (!input.billing.line1 || !input.billing.city || !input.billing.zip)) {
+    return { ok: false, message: "Please complete the billing address." };
+  }
+
+  if (!input.policyAccepted) {
+    return { ok: false, message: "Please confirm the professional-use acknowledgement." };
   }
 
   const { valid: cardValid, brand } = validateCardNumber(input.card.number);
@@ -125,8 +140,33 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       message: `Orders have a \$${MIN_CHECKOUT_SUBTOTAL_USD} minimum — your subtotal is below that.`,
     };
   }
-  const shippingAmount = calculateShipping(subtotal);
-  const total = subtotal + shippingAmount;
+  // Coupon is revalidated server-side against the recomputed subtotal —
+  // the client's applied discount is never trusted.
+  let couponCode: string | null = null;
+  let discountAmount = 0;
+  if (input.couponCode?.trim()) {
+    const code = input.couponCode.trim().toUpperCase();
+    const { data: coupon } = await admin
+      .from("coupons")
+      .select("code, kind, value, min_subtotal, max_uses, used_count, expires_at, is_active")
+      .ilike("code", code)
+      .maybeSingle();
+    const valid =
+      coupon &&
+      coupon.is_active &&
+      (!coupon.expires_at || new Date(coupon.expires_at) >= new Date()) &&
+      (coupon.max_uses === null || coupon.used_count < coupon.max_uses) &&
+      subtotal >= Number(coupon.min_subtotal);
+    if (!valid) {
+      return { ok: false, message: "That coupon is no longer valid — remove it and try again." };
+    }
+    couponCode = coupon.code.toUpperCase();
+    discountAmount = couponDiscount(coupon.kind, Number(coupon.value), subtotal);
+  }
+
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const shippingAmount = calculateShipping(discountedSubtotal);
+  const total = discountedSubtotal + shippingAmount;
 
   const paymentCardSnapshot = {
     brand,
@@ -138,17 +178,19 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     cvv_encrypted: encryptCardField(input.card.cvv),
   };
 
-  const shippingAddressJson = {
-    recipient_name: input.shipping.recipientName,
-    company: input.shipping.company,
-    address_line1: input.shipping.line1,
-    address_line2: input.shipping.line2,
-    city: input.shipping.city,
-    state: input.shipping.state,
-    zip: input.shipping.zip,
-    country: input.shipping.country,
-    phone: input.shipping.phone,
-  };
+  const toAddressJson = (a: Address) => ({
+    recipient_name: a.recipientName,
+    company: a.company,
+    address_line1: a.line1,
+    address_line2: a.line2,
+    city: a.city,
+    state: a.state,
+    zip: a.zip,
+    country: a.country,
+    phone: a.phone,
+  });
+  const shippingAddressJson = toAddressJson(input.shipping);
+  const billingAddressJson = input.billing ? toAddressJson(input.billing) : null;
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const referenceNumber = await nextReferenceNumber(supabase);
@@ -163,6 +205,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
         shipping_amount: shippingAmount,
         total,
         shipping_address: shippingAddressJson,
+        billing_address: billingAddressJson,
+        coupon_code: couponCode,
+        discount_amount: discountAmount,
+        policy_acknowledged_at: new Date().toISOString(),
         customer_name: input.shipping.recipientName,
         customer_email: user.email,
         notes: input.notes || null,
@@ -186,6 +232,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       return { ok: false, message: "We couldn't save your order items. Please contact support." };
     }
 
+    if (couponCode) {
+      // Atomic usage bump; failure here shouldn't block the order.
+      admin.rpc("increment_coupon_use", { p_code: couponCode }).then(
+        () => {},
+        () => {}
+      );
+    }
+
     // Awaited (not fire-and-forget): serverless functions can freeze after
     // the response is sent, so the emails must complete before returning.
     // Both sends never throw — a mail failure can't break order placement.
@@ -196,6 +250,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       customer_email: user.email ?? null,
       subtotal,
       shipping_amount: shippingAmount,
+      discount_amount: discountAmount,
+      coupon_code: couponCode,
       total,
     };
     await Promise.allSettled([

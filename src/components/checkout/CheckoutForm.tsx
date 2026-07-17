@@ -3,7 +3,8 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Lock, ShoppingCart } from "lucide-react";
+import { ArrowRight, Lock, ShoppingCart, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import { lineUnitPrice } from "@/lib/cart";
@@ -11,6 +12,7 @@ import { calculateShipping } from "@/lib/shipping";
 import { meetsCheckoutMinimumUsd } from "@/lib/cart-minimum";
 import CartMinimumBar from "@/components/cart/CartMinimumBar";
 import { placeOrder } from "@/app/actions/orders";
+import { validateCoupon } from "@/app/actions/coupons";
 
 type Prefill = {
   recipientName: string;
@@ -23,6 +25,20 @@ type Prefill = {
   zip: string;
   country: string;
 };
+
+const emptyAddress = {
+  recipientName: "",
+  company: "",
+  line1: "",
+  line2: "",
+  city: "",
+  state: "",
+  zip: "",
+  country: "US",
+  phone: "",
+};
+
+type AppliedCoupon = { code: string; discount: number };
 
 export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const router = useRouter();
@@ -41,8 +57,15 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
     country: prefill.country || "US",
     phone: prefill.phone,
   });
+  const [billingSame, setBillingSame] = useState(true);
+  const [billing, setBilling] = useState({ ...emptyAddress });
   const [card, setCard] = useState({ number: "", expMonth: "", expYear: "", cvv: "", nameOnCard: "" });
   const [notes, setNotes] = useState("");
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+
+  const [couponInput, setCouponInput] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
 
   if (items.length === 0) {
     return (
@@ -61,24 +84,51 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
     );
   }
 
-  const shippingAmount = calculateShipping(subtotal);
-  const total = subtotal + shippingAmount;
+  const discount = coupon?.discount ?? 0;
+  const discountedSubtotal = Math.max(0, subtotal - discount);
+  const shippingAmount = calculateShipping(discountedSubtotal);
+  const total = discountedSubtotal + shippingAmount;
   const minimumMet = meetsCheckoutMinimumUsd(subtotal);
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setApplyingCoupon(true);
+    const result = await validateCoupon(couponInput, subtotal);
+    setApplyingCoupon(false);
+    if (result.ok) {
+      setCoupon({ code: result.code, discount: result.discount });
+      toast.success(`Coupon ${result.code} applied`);
+    } else {
+      toast.error(result.message);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setCouponInput("");
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
 
+    if (!policyAccepted) {
+      setError("Please confirm the professional-use acknowledgement.");
+      return;
+    }
+
+    setSubmitting(true);
     const result = await placeOrder({
       items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
       shipping,
+      billing: billingSame ? null : billing,
+      couponCode: coupon?.code,
+      policyAccepted,
       card,
       notes,
     });
 
     setSubmitting(false);
-
     if (!result.ok) {
       setError(result.message);
       return;
@@ -115,6 +165,33 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
           </section>
 
           <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="eyebrow">Billing address</h2>
+              <label className="flex items-center gap-2 cursor-pointer text-[12.5px] text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={billingSame}
+                  onChange={(e) => setBillingSame(e.target.checked)}
+                  className="h-4 w-4 accent-teal"
+                />
+                Same as shipping
+              </label>
+            </div>
+            {!billingSame && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="Recipient name" value={billing.recipientName} onChange={(v) => setBilling((b) => ({ ...b, recipientName: v }))} required span2 />
+                <Field label="Practice / company" value={billing.company} onChange={(v) => setBilling((b) => ({ ...b, company: v }))} span2 />
+                <Field label="Address line 1" value={billing.line1} onChange={(v) => setBilling((b) => ({ ...b, line1: v }))} required span2 />
+                <Field label="Address line 2" value={billing.line2} onChange={(v) => setBilling((b) => ({ ...b, line2: v }))} span2 />
+                <Field label="City" value={billing.city} onChange={(v) => setBilling((b) => ({ ...b, city: v }))} required />
+                <Field label="State" value={billing.state} onChange={(v) => setBilling((b) => ({ ...b, state: v }))} required />
+                <Field label="ZIP" value={billing.zip} onChange={(v) => setBilling((b) => ({ ...b, zip: v }))} required />
+                <Field label="Phone" type="tel" value={billing.phone} onChange={(v) => setBilling((b) => ({ ...b, phone: v }))} />
+              </div>
+            )}
+          </section>
+
+          <section>
             <h2 className="eyebrow mb-2">Payment</h2>
             <p className="text-[12.5px] text-ink-soft mb-4 flex items-center gap-1.5">
               <Lock size={12} className="text-teal" />
@@ -147,7 +224,7 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
             <h2 className="eyebrow mb-4">Order summary</h2>
 
             <CartMinimumBar amountUsd={subtotal} />
-            <ul className="flex flex-col gap-2.5 mb-4 pb-4 border-b border-line max-h-[220px] overflow-y-auto pr-1">
+            <ul className="flex flex-col gap-2.5 mb-4 pb-4 border-b border-line max-h-[200px] overflow-y-auto pr-1">
               {items.map((item) => (
                 <li key={item.id} className="flex justify-between gap-3 text-[13px]">
                   <span className="text-ink-soft truncate">
@@ -157,11 +234,49 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
                 </li>
               ))}
             </ul>
+
+            {/* Coupon */}
+            <div className="mb-4 pb-4 border-b border-line">
+              {coupon ? (
+                <div className="flex items-center justify-between gap-2 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 text-stock">
+                    <Check size={14} /> <span className="font-mono">{coupon.code}</span> applied
+                  </span>
+                  <button type="button" onClick={removeCoupon} className="text-ink-faint hover:text-low inline-flex items-center gap-0.5 text-[12px]">
+                    <X size={13} /> Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    placeholder="Coupon code"
+                    className="flex-1 min-w-0 border border-line rounded-sm px-2.5 py-1.5 text-[13px] font-mono uppercase bg-card outline-none focus:border-teal transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponInput.trim()}
+                    className="border border-line-strong rounded-sm px-3 text-[12.5px] font-medium text-ink hover:border-teal hover:text-teal transition-colors disabled:opacity-60 whitespace-nowrap"
+                  >
+                    {applyingCoupon ? "…" : "Apply"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-2.5 text-[13.5px]">
               <div className="flex justify-between">
                 <span className="text-ink-soft">Subtotal</span>
                 <span className="font-mono tabular">{formatPrice(subtotal)}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-stock">
+                  <span>Discount ({coupon?.code})</span>
+                  <span className="font-mono tabular">−{formatPrice(discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-ink-soft">Shipping</span>
                 <span className="font-mono tabular">
@@ -174,10 +289,27 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
               <span className="font-mono tabular text-[22px] text-amber">{formatPrice(total)}</span>
             </div>
 
+            <label className="flex items-start gap-2.5 mt-5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={policyAccepted}
+                onChange={(e) => setPolicyAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-teal shrink-0"
+              />
+              <span className="text-[12px] text-ink-soft leading-relaxed">
+                I confirm these products are for professional use within my licensed scope of practice, and I
+                accept the{" "}
+                <Link href="/legal/terms" className="text-teal hover:underline" target="_blank">
+                  terms of service
+                </Link>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={submitting || !minimumMet}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors mt-5 disabled:opacity-60"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors mt-4 disabled:opacity-60"
             >
               {submitting ? "Placing order…" : "Place order"}
               {!submitting && <ArrowRight size={16} />}
