@@ -13,7 +13,7 @@ export default async function CheckoutPage() {
 
   const admin = createAdminClient();
   const supabase = await createClient();
-  const [{ data: profile }, { data: defaultAddress }] = await Promise.all([
+  const [{ data: profile }, { data: defaultAddress }, { data: savedCards }] = await Promise.all([
     admin
       .from("profiles")
       .select("first_name, last_name, company, phone, address_line1, city, state, postal_code, country")
@@ -25,6 +25,12 @@ export default async function CheckoutPage() {
       .eq("user_id", user.id)
       .eq("is_default", true)
       .maybeSingle(),
+    supabase
+      .from("user_saved_cards")
+      .select("id, brand, last4, exp_month, exp_year, name_on_card, is_default")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   const recipientName =
@@ -34,6 +40,7 @@ export default async function CheckoutPage() {
   // captured at registration on the profile.
   return (
     <CheckoutForm
+      savedCards={savedCards ?? []}
       prefill={{
         recipientName,
         company: profile?.company ?? "",

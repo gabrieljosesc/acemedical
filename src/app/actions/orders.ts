@@ -30,13 +30,17 @@ type PlaceOrderInput = {
   billing?: Address | null;
   couponCode?: string;
   policyAccepted: boolean;
-  card: {
+  // Either a card on file (savedCardId + cvv) or full new-card details.
+  savedCardId?: string | null;
+  savedCardCvv?: string;
+  card?: {
     number: string;
     expMonth: string;
     expYear: string;
     cvv: string;
     nameOnCard: string;
-  };
+  } | null;
+  saveNewCard?: boolean;
   notes?: string;
 };
 
@@ -83,15 +87,78 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     return { ok: false, message: "Please confirm the professional-use acknowledgement." };
   }
 
-  const { valid: cardValid, brand } = validateCardNumber(input.card.number);
-  if (!cardValid) {
-    return { ok: false, message: "That card number doesn't look valid." };
-  }
-  if (!validateExpiry(input.card.expMonth, input.card.expYear)) {
-    return { ok: false, message: "That card's expiry date is invalid or in the past." };
-  }
-  if (!validateCvv(input.card.cvv, brand)) {
-    return { ok: false, message: "That security code doesn't look valid." };
+  // Payment: either a card on file or full new-card details.
+  type CardSnapshot = {
+    brand: string;
+    last4: string;
+    exp_month: string | number;
+    exp_year: string | number;
+    name_on_card: string;
+    pan_encrypted: string;
+    cvv_encrypted: string;
+  };
+  let paymentCardSnapshot: CardSnapshot;
+  let saveCardAfterOrder: { number: string; expMonth: string; expYear: string; nameOnCard: string; brand: string } | null =
+    null;
+
+  if (input.savedCardId) {
+    const { data: saved } = await supabase
+      .from("user_saved_cards")
+      .select("id, brand, last4, exp_month, exp_year, name_on_card, pan_encrypted")
+      .eq("id", input.savedCardId)
+      .eq("user_id", user.id)
+      .single();
+    if (!saved) {
+      return { ok: false, message: "That saved card couldn't be found — pick another or enter a new card." };
+    }
+    if (!validateExpiry(String(saved.exp_month), String(saved.exp_year))) {
+      return { ok: false, message: "That saved card is expired — update it or use a new card." };
+    }
+    const cvv = (input.savedCardCvv ?? "").trim();
+    if (!validateCvv(cvv, saved.brand as Parameters<typeof validateCvv>[1])) {
+      return { ok: false, message: "Enter the security code for your saved card." };
+    }
+    paymentCardSnapshot = {
+      brand: saved.brand,
+      last4: saved.last4,
+      exp_month: saved.exp_month,
+      exp_year: saved.exp_year,
+      name_on_card: saved.name_on_card,
+      pan_encrypted: saved.pan_encrypted,
+      cvv_encrypted: encryptCardField(cvv),
+    };
+  } else {
+    if (!input.card) {
+      return { ok: false, message: "Enter your card details or pick a saved card." };
+    }
+    const { valid: cardValid, brand } = validateCardNumber(input.card.number);
+    if (!cardValid) {
+      return { ok: false, message: "That card number doesn't look valid." };
+    }
+    if (!validateExpiry(input.card.expMonth, input.card.expYear)) {
+      return { ok: false, message: "That card's expiry date is invalid or in the past." };
+    }
+    if (!validateCvv(input.card.cvv, brand)) {
+      return { ok: false, message: "That security code doesn't look valid." };
+    }
+    paymentCardSnapshot = {
+      brand,
+      last4: last4(input.card.number),
+      exp_month: input.card.expMonth,
+      exp_year: input.card.expYear,
+      name_on_card: input.card.nameOnCard,
+      pan_encrypted: encryptCardField(input.card.number.replace(/\D/g, "")),
+      cvv_encrypted: encryptCardField(input.card.cvv),
+    };
+    if (input.saveNewCard) {
+      saveCardAfterOrder = {
+        number: input.card.number,
+        expMonth: input.card.expMonth,
+        expYear: input.card.expYear,
+        nameOnCard: input.card.nameOnCard,
+        brand,
+      };
+    }
   }
 
   // Re-fetch products server-side — never trust client-submitted prices.
@@ -168,16 +235,6 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const shippingAmount = calculateShipping(discountedSubtotal);
   const total = discountedSubtotal + shippingAmount;
 
-  const paymentCardSnapshot = {
-    brand,
-    last4: last4(input.card.number),
-    exp_month: input.card.expMonth,
-    exp_year: input.card.expYear,
-    name_on_card: input.card.nameOnCard,
-    pan_encrypted: encryptCardField(input.card.number.replace(/\D/g, "")),
-    cvv_encrypted: encryptCardField(input.card.cvv),
-  };
-
   const toAddressJson = (a: Address) => ({
     recipient_name: a.recipientName,
     company: a.company,
@@ -230,6 +287,27 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     if (itemsError) {
       console.error("placeOrder items insert error:", itemsError);
       return { ok: false, message: "We couldn't save your order items. Please contact support." };
+    }
+
+    if (saveCardAfterOrder) {
+      // Convenience only — a failure here must not affect the placed order.
+      const { count } = await supabase
+        .from("user_saved_cards")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      await supabase.from("user_saved_cards").insert({
+        user_id: user.id,
+        name_on_card: saveCardAfterOrder.nameOnCard.trim(),
+        brand: saveCardAfterOrder.brand,
+        last4: last4(saveCardAfterOrder.number),
+        exp_month: parseInt(saveCardAfterOrder.expMonth, 10),
+        exp_year: parseInt(
+          saveCardAfterOrder.expYear.length === 2 ? `20${saveCardAfterOrder.expYear}` : saveCardAfterOrder.expYear,
+          10
+        ),
+        pan_encrypted: encryptCardField(saveCardAfterOrder.number.replace(/\D/g, "")),
+        is_default: (count ?? 0) === 0,
+      });
     }
 
     if (couponCode) {

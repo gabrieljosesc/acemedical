@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Lock, ShoppingCart, Check, X } from "lucide-react";
+import { ArrowRight, Lock, ShoppingCart, Check, X, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
@@ -13,6 +13,7 @@ import { meetsCheckoutMinimumUsd } from "@/lib/cart-minimum";
 import CartMinimumBar from "@/components/cart/CartMinimumBar";
 import { placeOrder } from "@/app/actions/orders";
 import { validateCoupon } from "@/app/actions/coupons";
+import AddressAutocompleteInput from "@/components/forms/AddressAutocompleteInput";
 
 type Prefill = {
   recipientName: string;
@@ -40,7 +41,23 @@ const emptyAddress = {
 
 type AppliedCoupon = { code: string; discount: number };
 
-export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
+export type SavedCard = {
+  id: string;
+  brand: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  name_on_card: string;
+  is_default: boolean;
+};
+
+export default function CheckoutForm({
+  prefill,
+  savedCards,
+}: {
+  prefill: Prefill;
+  savedCards: SavedCard[];
+}) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +77,10 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [billingSame, setBillingSame] = useState(true);
   const [billing, setBilling] = useState({ ...emptyAddress });
   const [card, setCard] = useState({ number: "", expMonth: "", expYear: "", cvv: "", nameOnCard: "" });
+  // Preselect the default (first) saved card; "new" = enter card details inline.
+  const [selectedCardId, setSelectedCardId] = useState<string | "new">(savedCards[0]?.id ?? "new");
+  const [savedCardCvv, setSavedCardCvv] = useState("");
+  const [saveNewCard, setSaveNewCard] = useState(false);
   const [notes, setNotes] = useState("");
   const [policyAccepted, setPolicyAccepted] = useState(false);
 
@@ -124,7 +145,10 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
       billing: billingSame ? null : billing,
       couponCode: coupon?.code,
       policyAccepted,
-      card,
+      savedCardId: selectedCardId === "new" ? null : selectedCardId,
+      savedCardCvv: selectedCardId === "new" ? undefined : savedCardCvv,
+      card: selectedCardId === "new" ? card : null,
+      saveNewCard: selectedCardId === "new" ? saveNewCard : false,
       notes,
     });
 
@@ -155,7 +179,16 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
             <div className="grid sm:grid-cols-2 gap-3">
               <Field label="Recipient name" value={shipping.recipientName} onChange={(v) => setShipping((s) => ({ ...s, recipientName: v }))} required span2 />
               <Field label="Practice / company" value={shipping.company} onChange={(v) => setShipping((s) => ({ ...s, company: v }))} span2 />
-              <Field label="Address line 1" value={shipping.line1} onChange={(v) => setShipping((s) => ({ ...s, line1: v }))} required span2 />
+              <AddressAutocompleteInput
+                label="Address line 1"
+                value={shipping.line1}
+                onChange={(v) => setShipping((s) => ({ ...s, line1: v }))}
+                onAddressSelect={(a) =>
+                  setShipping((s) => ({ ...s, line1: a.line1, city: a.city, state: a.state, zip: a.zip, country: a.country }))
+                }
+                required
+                span2
+              />
               <Field label="Address line 2" value={shipping.line2} onChange={(v) => setShipping((s) => ({ ...s, line2: v }))} span2 />
               <Field label="City" value={shipping.city} onChange={(v) => setShipping((s) => ({ ...s, city: v }))} required />
               <Field label="State" value={shipping.state} onChange={(v) => setShipping((s) => ({ ...s, state: v }))} required />
@@ -181,7 +214,16 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Recipient name" value={billing.recipientName} onChange={(v) => setBilling((b) => ({ ...b, recipientName: v }))} required span2 />
                 <Field label="Practice / company" value={billing.company} onChange={(v) => setBilling((b) => ({ ...b, company: v }))} span2 />
-                <Field label="Address line 1" value={billing.line1} onChange={(v) => setBilling((b) => ({ ...b, line1: v }))} required span2 />
+                <AddressAutocompleteInput
+                  label="Address line 1"
+                  value={billing.line1}
+                  onChange={(v) => setBilling((b) => ({ ...b, line1: v }))}
+                  onAddressSelect={(a) =>
+                    setBilling((b) => ({ ...b, line1: a.line1, city: a.city, state: a.state, zip: a.zip, country: a.country }))
+                  }
+                  required
+                  span2
+                />
                 <Field label="Address line 2" value={billing.line2} onChange={(v) => setBilling((b) => ({ ...b, line2: v }))} span2 />
                 <Field label="City" value={billing.city} onChange={(v) => setBilling((b) => ({ ...b, city: v }))} required />
                 <Field label="State" value={billing.state} onChange={(v) => setBilling((b) => ({ ...b, state: v }))} required />
@@ -198,13 +240,78 @@ export default function CheckoutForm({ prefill }: { prefill: Prefill }) {
               No card is charged at submit — our team processes payment on your card on file once the order is
               approved.
             </p>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="Name on card" value={card.nameOnCard} onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v }))} required span2 />
-              <Field label="Card number" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} required span2 />
-              <Field label="Expiry month (MM)" value={card.expMonth} onChange={(v) => setCard((c) => ({ ...c, expMonth: v }))} required />
-              <Field label="Expiry year (YYYY)" value={card.expYear} onChange={(v) => setCard((c) => ({ ...c, expYear: v }))} required />
-              <Field label="Security code" value={card.cvv} onChange={(v) => setCard((c) => ({ ...c, cvv: v }))} required />
-            </div>
+            {savedCards.length > 0 && (
+              <div className="flex flex-col gap-2 mb-4">
+                {savedCards.map((c) => (
+                  <label
+                    key={c.id}
+                    className={`flex items-center gap-3 border rounded-sm px-3.5 py-3 cursor-pointer transition-colors ${
+                      selectedCardId === c.id ? "border-teal bg-teal-tint" : "border-line bg-card hover:border-line-strong"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-card"
+                      checked={selectedCardId === c.id}
+                      onChange={() => setSelectedCardId(c.id)}
+                      className="h-4 w-4 accent-teal shrink-0"
+                    />
+                    <CreditCard size={16} className="text-ink-faint shrink-0" />
+                    <span className="text-[13.5px] text-ink">
+                      <span className="capitalize font-medium">{c.brand}</span>{" "}
+                      <span className="font-mono tabular">•••• {c.last4}</span>
+                    </span>
+                    <span className="font-mono tabular text-[12px] text-ink-faint ml-auto">
+                      {String(c.exp_month).padStart(2, "0")}/{String(c.exp_year).slice(-2)}
+                    </span>
+                    {c.is_default && (
+                      <span className="font-mono text-[10px] tracking-wide uppercase text-teal bg-card border border-teal/30 rounded-full px-2 py-0.5">
+                        Default
+                      </span>
+                    )}
+                  </label>
+                ))}
+                <label
+                  className={`flex items-center gap-3 border rounded-sm px-3.5 py-3 cursor-pointer transition-colors ${
+                    selectedCardId === "new" ? "border-teal bg-teal-tint" : "border-line bg-card hover:border-line-strong"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment-card"
+                    checked={selectedCardId === "new"}
+                    onChange={() => setSelectedCardId("new")}
+                    className="h-4 w-4 accent-teal shrink-0"
+                  />
+                  <span className="text-[13.5px] text-ink font-medium">Use a new card</span>
+                </label>
+              </div>
+            )}
+
+            {selectedCardId !== "new" ? (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="Security code" value={savedCardCvv} onChange={setSavedCardCvv} required />
+              </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="Name on card" value={card.nameOnCard} onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v }))} required span2 />
+                  <Field label="Card number" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} required span2 />
+                  <Field label="Expiry month (MM)" value={card.expMonth} onChange={(v) => setCard((c) => ({ ...c, expMonth: v }))} required />
+                  <Field label="Expiry year (YYYY)" value={card.expYear} onChange={(v) => setCard((c) => ({ ...c, expYear: v }))} required />
+                  <Field label="Security code" value={card.cvv} onChange={(v) => setCard((c) => ({ ...c, cvv: v }))} required />
+                </div>
+                <label className="flex items-center gap-2 mt-3 cursor-pointer text-[12.5px] text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={saveNewCard}
+                    onChange={(e) => setSaveNewCard(e.target.checked)}
+                    className="h-4 w-4 accent-teal"
+                  />
+                  Save this card to my account for faster checkout
+                </label>
+              </>
+            )}
           </section>
 
           <section>
