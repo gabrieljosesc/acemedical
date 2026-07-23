@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -26,7 +27,7 @@ export default async function BlogPostPage({ params }: Props) {
   const admin = createAdminClient();
   const { data: post } = await admin
     .from("blog_posts")
-    .select("title, excerpt, body, published_at")
+    .select("title, excerpt, body, published_at, cover_image_url")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
@@ -59,6 +60,11 @@ export default async function BlogPostPage({ params }: Props) {
       <h1 className="font-serif font-medium text-[30px] sm:text-[36px] tracking-tight mb-4 text-balance">
         {post.title}
       </h1>
+      {post.cover_image_url && (
+        <div className="relative w-full aspect-[16/9] border border-line rounded-sm overflow-hidden mb-8">
+          <Image src={post.cover_image_url} alt="" fill className="object-cover" sizes="720px" priority />
+        </div>
+      )}
       {post.excerpt && (
         <p className="text-[16px] text-ink-soft leading-relaxed mb-8 border-l-2 border-teal pl-4">
           {post.excerpt}

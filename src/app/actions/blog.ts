@@ -22,6 +22,7 @@ export async function upsertBlogPost(input: {
   excerpt: string;
   body: string;
   isPublished: boolean;
+  coverImageUrl: string | null;
 }): Promise<BlogResult> {
   const adminUser = await getAdminUser();
   if (!adminUser) return { ok: false, message: "Admin access required." };
@@ -41,6 +42,7 @@ export async function upsertBlogPost(input: {
     excerpt: input.excerpt.trim() || null,
     body,
     is_published: input.isPublished,
+    cover_image_url: input.coverImageUrl,
     updated_at: new Date().toISOString(),
   };
 
@@ -80,6 +82,38 @@ export async function upsertBlogPost(input: {
   }
   revalidatePath("/blog");
   return { ok: true, message: "Post created.", id: data.id };
+}
+
+const IMAGE_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export async function uploadBlogCoverImage(formData: FormData): Promise<BlogResult> {
+  const adminUser = await getAdminUser();
+  if (!adminUser) return { ok: false, message: "Admin access required." };
+
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Choose an image file first." };
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return { ok: false, message: "Image must be 2 MB or smaller." };
+  }
+  const ext = IMAGE_TYPES[file.type];
+  if (!ext) return { ok: false, message: "Use a JPEG, PNG, or WebP image." };
+
+  const admin = createAdminClient();
+  const path = `covers/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await admin.storage.from("blog-images").upload(path, file, { contentType: file.type });
+  if (error) return { ok: false, message: "Upload failed — has supabase/blog-cover-images.sql been run?" };
+
+  const {
+    data: { publicUrl },
+  } = admin.storage.from("blog-images").getPublicUrl(path);
+
+  return { ok: true, message: publicUrl };
 }
 
 export async function deleteBlogPost(id: string): Promise<BlogResult> {

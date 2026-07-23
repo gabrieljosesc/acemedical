@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import { toast } from "sonner";
-import { upsertBlogPost, deleteBlogPost } from "@/app/actions/blog";
+import { upsertBlogPost, deleteBlogPost, uploadBlogCoverImage } from "@/app/actions/blog";
 
 type Post = {
   id: string;
@@ -12,18 +14,41 @@ type Post = {
   excerpt: string | null;
   body: string;
   is_published: boolean;
+  cover_image_url: string | null;
 };
 
 export default function BlogEditor({ post }: { post: Post | null }) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: post?.title ?? "",
     slug: post?.slug ?? "",
     excerpt: post?.excerpt ?? "",
     body: post?.body ?? "",
     isPublished: post?.is_published ?? false,
+    coverImageUrl: post?.cover_image_url ?? null as string | null,
   });
   const [pending, startTransition] = useTransition();
+
+  function handleCoverUpload() {
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      toast.error("Choose an image file first.");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("image", file);
+    startTransition(async () => {
+      const result = await uploadBlogCoverImage(formData);
+      if (result.ok && result.message) {
+        setForm((f) => ({ ...f, coverImageUrl: result.message! }));
+        if (fileRef.current) fileRef.current.value = "";
+        toast.success("Cover image uploaded.");
+      } else if (!result.ok) {
+        toast.error(result.message);
+      }
+    });
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -79,6 +104,32 @@ export default function BlogEditor({ post }: { post: Post | null }) {
           className="border border-line rounded-sm px-3 py-2.5 text-[14px] font-mono bg-card outline-none focus:border-teal transition-colors"
         />
       </label>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-ink">Cover image</span>
+        {form.coverImageUrl && (
+          <div className="relative w-full max-w-[320px] aspect-[16/9] border border-line rounded-sm overflow-hidden group">
+            <Image src={form.coverImageUrl} alt="" fill className="object-cover" sizes="320px" />
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, coverImageUrl: null }))}
+              aria-label="Remove cover image"
+              className="absolute top-1.5 right-1.5 bg-card border border-line rounded-full p-1 opacity-0 group-hover:opacity-100 text-low transition-opacity"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="block text-[12px] text-ink-soft" />
+        <button
+          type="button"
+          onClick={handleCoverUpload}
+          disabled={pending}
+          className="self-start rounded-sm border border-teal text-teal text-[12.5px] font-medium px-3.5 py-1.5 hover:bg-teal hover:text-[#F4FBF8] transition-colors disabled:opacity-60"
+        >
+          Upload cover image
+        </button>
+      </div>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[13px] font-medium text-ink">Excerpt</span>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Newspaper, ArrowRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -12,7 +13,7 @@ export default async function BlogPage() {
   const admin = createAdminClient();
   const { data: posts } = await admin
     .from("blog_posts")
-    .select("id, slug, title, excerpt, published_at")
+    .select("id, slug, title, excerpt, published_at, cover_image_url")
     .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(50);
@@ -34,31 +35,41 @@ export default async function BlogPage() {
       ) : (
         <div className="flex flex-col divide-y divide-line">
           {(posts ?? []).map((post) => (
-            <article key={post.id} className="py-7 first:pt-0 group">
-              <p className="font-mono text-[11px] tracking-wide uppercase text-ink-faint mb-2">
-                {post.published_at
-                  ? new Date(post.published_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : ""}
-              </p>
-              <h2 className="font-serif font-medium text-[22px] tracking-tight mb-2">
-                <Link href={`/blog/${post.slug}`} className="hover:text-teal transition-colors">
-                  {post.title}
+            <article key={post.id} className="py-7 first:pt-0 group sm:flex sm:gap-6 sm:items-start">
+              {post.cover_image_url && (
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="relative block w-full sm:w-[180px] aspect-[16/9] shrink-0 border border-line rounded-sm overflow-hidden mb-4 sm:mb-0"
+                >
+                  <Image src={post.cover_image_url} alt="" fill className="object-cover" sizes="180px" />
                 </Link>
-              </h2>
-              {post.excerpt && (
-                <p className="text-[14.5px] text-ink-soft leading-relaxed max-w-[64ch] mb-3">{post.excerpt}</p>
               )}
-              <Link
-                href={`/blog/${post.slug}`}
-                className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-teal hover:underline"
-              >
-                Read article
-                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+              <div className="min-w-0">
+                <p className="font-mono text-[11px] tracking-wide uppercase text-ink-faint mb-2">
+                  {post.published_at
+                    ? new Date(post.published_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : ""}
+                </p>
+                <h2 className="font-serif font-medium text-[22px] tracking-tight mb-2">
+                  <Link href={`/blog/${post.slug}`} className="hover:text-teal transition-colors">
+                    {post.title}
+                  </Link>
+                </h2>
+                {post.excerpt && (
+                  <p className="text-[14.5px] text-ink-soft leading-relaxed max-w-[64ch] mb-3">{post.excerpt}</p>
+                )}
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-teal hover:underline"
+                >
+                  Read article
+                  <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
             </article>
           ))}
         </div>

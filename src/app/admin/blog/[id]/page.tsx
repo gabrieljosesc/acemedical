@@ -12,7 +12,7 @@ export default async function AdminEditBlogPostPage({ params }: { params: Promis
   const admin = createAdminClient();
   const { data: post } = await admin
     .from("blog_posts")
-    .select("id, title, slug, excerpt, body, is_published")
+    .select("id, title, slug, excerpt, body, is_published, cover_image_url")
     .eq("id", id)
     .maybeSingle();
 
