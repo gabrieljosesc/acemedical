@@ -1,8 +1,24 @@
-// Transactional email transport. Uses Resend's HTTPS API when
-// RESEND_API_KEY is set; otherwise logs and no-ops so order placement
-// and admin actions never fail because email isn't configured yet.
+import "server-only";
+import { sendTransactionalEmail as sendViaResend, type SendEmailInput, type SendEmailResult } from "./resend";
+import { sendViaSmtp, smtpConfigured } from "./smtp";
 
-const FROM = process.env.EMAIL_FROM || "Ace Medical Wholesale <info@acemedicalwholesale.com>";
+/**
+ * Unified transactional email sender.
+ *
+ * Transport priority:
+ *  1. Own mail server via SMTP (SMTP_HOST / SMTP_USER / SMTP_PASS) — the
+ *     same server behind info@acemedicalwholesale.com in webmail.
+ *  2. Resend (RESEND_API_KEY) as fallback.
+ *  3. Neither configured → logs and no-ops, so order placement never breaks.
+ */
+export async function sendTransactionalEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  if (smtpConfigured()) {
+    return sendViaSmtp(input);
+  }
+  return sendViaResend(input);
+}
+
+export type { SendEmailInput, SendEmailResult };
 
 export function adminRecipients(): string[] {
   const extra = (process.env.ADMIN_NOTIFY_EMAILS ?? "")
@@ -11,38 +27,4 @@ export function adminRecipients(): string[] {
     .filter(Boolean);
   const primary = process.env.NOTIFICATION_EMAIL?.trim();
   return [...(primary ? [primary] : []), ...extra];
-}
-
-export async function sendTransactionalEmail(input: {
-  to: string | string[];
-  subject: string;
-  html: string;
-}): Promise<{ ok: boolean }> {
-  const to = Array.isArray(input.to) ? input.to : [input.to];
-  if (to.length === 0) return { ok: false };
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.log(`[email skipped — no RESEND_API_KEY] to=${to.join(",")} subject="${input.subject}"`);
-    return { ok: false };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from: FROM, to, subject: input.subject, html: input.html }),
-    });
-    if (!res.ok) {
-      console.error("[email failed]", res.status, await res.text());
-      return { ok: false };
-    }
-    return { ok: true };
-  } catch (err) {
-    console.error("[email failed]", err);
-    return { ok: false };
-  }
 }

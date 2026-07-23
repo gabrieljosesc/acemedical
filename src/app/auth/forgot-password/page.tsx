@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { forgotPasswordAction } from "@/app/actions/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -13,12 +13,9 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const supabase = createClient();
     // Always show the sent state regardless of outcome — never reveal
     // whether an email is registered (prevents account enumeration).
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
-    });
+    await forgotPasswordAction(email);
     setLoading(false);
     setSent(true);
   }

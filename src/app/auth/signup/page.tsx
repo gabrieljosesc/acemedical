@@ -2,10 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { registerSchema, flattenErrors } from "@/lib/validation/register-schema";
+import { registerAction } from "@/app/actions/auth";
 import PasswordField from "@/components/auth/PasswordField";
 import { FormField, FormSelect, FormSection } from "@/components/forms/FormField";
 
@@ -39,7 +38,6 @@ const initialForm = {
 type FormState = typeof initialForm;
 
 export default function SignupPage() {
-  const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [agreed, setAgreed] = useState(false);
@@ -69,48 +67,16 @@ export default function SignupPage() {
     setFieldErrors({});
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: {
-          prefix: form.prefix,
-          first_name: form.firstName,
-          middle_name: form.middleName,
-          last_name: form.lastName,
-          phone: form.phone,
-          address_line1: form.addressLine1,
-          city: form.city,
-          state: form.state,
-          postal_code: form.postalCode,
-          country: form.country,
-          company: form.company,
-          business_phone: form.businessPhone,
-          specialty: form.specialty,
-          website: form.website,
-          license_holder_name: form.licenseHolderName,
-          profession: form.profession,
-          license_number: form.licenseNumber,
-          license_expiry: form.licenseExpiry,
-          license_state: form.licenseState,
-          license_country: form.licenseCountry,
-        },
-      },
-    });
+    const outcome = await registerAction(result.data);
 
     setLoading(false);
-    if (error) {
-      setGlobalError(error.message);
+    if (!outcome.ok) {
+      if (outcome.fieldErrors) setFieldErrors(outcome.fieldErrors);
+      else setGlobalError(outcome.message);
       return;
     }
 
-    if (data.session) {
-      router.push("/");
-      router.refresh();
-    } else {
-      setCheckEmail(true);
-    }
+    setCheckEmail(true);
   }
 
   if (checkEmail) {
