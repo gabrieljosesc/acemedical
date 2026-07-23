@@ -28,7 +28,8 @@ export default function AboutPage() {
       <InfoSection title="How we ship">
         <p>
           Temperature-sensitive products are packed cold-chain and dispatched within 24 hours of approval,
-          fully insured and tracked door to door. Orders over $500 ship free.
+          fully insured and tracked door to door. Your first order always ships free — after that, shipping
+          is free on orders of $800 or more, $50 on orders of $500–$800, and $100 on orders under $500.
         </p>
       </InfoSection>
       <InfoSection title="How payment works">

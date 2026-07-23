@@ -30,7 +30,7 @@ export default async function Navbar() {
             1-800-465-1525
           </a>
           <span className="order-first w-full text-center sm:order-none sm:w-auto">
-            Free Shipping for all orders over $500!
+            Your first order ships free — then free on orders $800+!
           </span>
           <a href="mailto:info@acemedicalwholesale.com" className="hidden sm:inline hover:text-[#8FD3C5] transition-colors">
             info@acemedicalwholesale.com

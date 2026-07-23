@@ -54,9 +54,11 @@ export type SavedCard = {
 export default function CheckoutForm({
   prefill,
   savedCards,
+  isFirstOrder,
 }: {
   prefill: Prefill;
   savedCards: SavedCard[];
+  isFirstOrder: boolean;
 }) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
@@ -107,7 +109,7 @@ export default function CheckoutForm({
 
   const discount = coupon?.discount ?? 0;
   const discountedSubtotal = Math.max(0, subtotal - discount);
-  const shippingAmount = calculateShipping(discountedSubtotal);
+  const shippingAmount = calculateShipping(discountedSubtotal, isFirstOrder);
   const total = discountedSubtotal + shippingAmount;
   const minimumMet = meetsCheckoutMinimumUsd(subtotal);
 
@@ -390,6 +392,9 @@ export default function CheckoutForm({
                   {shippingAmount === 0 ? "Free" : formatPrice(shippingAmount)}
                 </span>
               </div>
+              {isFirstOrder && shippingAmount === 0 && (
+                <p className="text-[12px] text-stock">Complimentary shipping — your first order ships free.</p>
+              )}
             </div>
             <div className="flex justify-between items-baseline mt-4 pt-4 border-t border-line">
               <span className="text-[14px] font-medium text-ink">Total</span>

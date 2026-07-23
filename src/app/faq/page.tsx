@@ -17,7 +17,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "How fast do orders ship?",
-    a: "Approved orders are packed cold-chain and dispatched within 24 hours, tracked door to door. Orders over $500 ship free; everything else ships at a flat insured rate.",
+    a: "Approved orders are packed cold-chain and dispatched within 24 hours, tracked door to door. Your first order always ships free. After that, shipping is free on orders of $800+, $50 on orders of $500–$800, and $100 on orders under $500.",
   },
   {
     q: "Do you offer volume pricing?",

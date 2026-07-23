@@ -61,6 +61,21 @@ async function nextReferenceNumber(supabase: Awaited<ReturnType<typeof createCli
   return `AMW-${max + 1}`;
 }
 
+export async function isFirstOrder(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .neq("status", "cancelled");
+  return (count ?? 0) === 0;
+}
+
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
   const supabase = await createClient();
   const {
@@ -231,8 +246,17 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     discountAmount = couponDiscount(coupon.kind, Number(coupon.value), subtotal);
   }
 
+  // Count non-cancelled prior orders — a cancelled attempt shouldn't consume
+  // the first-order-free perk.
+  const { count: priorOrders } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .neq("status", "cancelled");
+  const firstOrder = (priorOrders ?? 0) === 0;
+
   const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-  const shippingAmount = calculateShipping(discountedSubtotal);
+  const shippingAmount = calculateShipping(discountedSubtotal, firstOrder);
   const total = discountedSubtotal + shippingAmount;
 
   const toAddressJson = (a: Address) => ({

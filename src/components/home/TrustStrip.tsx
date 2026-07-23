@@ -3,8 +3,8 @@ import { Truck, Clock, ShieldCheck, BadgeCheck } from "lucide-react";
 const ITEMS = [
   {
     icon: Truck,
-    title: "Free freight over $500",
-    body: "Flat-rate insured delivery on everything else.",
+    title: "First order ships free",
+    body: "Then free at $800+, flat insured rates below that.",
   },
   {
     icon: Clock,
