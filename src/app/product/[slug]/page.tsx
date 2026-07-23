@@ -156,16 +156,32 @@ export default async function ProductPage({ params }: Props) {
 
           {product.sku && <p className="font-mono text-[11.5px] text-ink-faint mt-4">SKU: {product.sku}</p>}
 
-          {product.coaUrl && (
-            <a
-              href={product.coaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-4 border border-line-strong rounded-sm px-4 py-2.5 text-[13px] font-medium text-ink hover:border-teal hover:text-teal transition-colors"
-            >
-              <FileText size={15} className="text-teal" />
-              Certificate of Analysis (PDF)
-            </a>
+          {(product.coaUrl || product.additionalCoas.length > 0) && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {product.coaUrl && (
+                <a
+                  href={product.coaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border border-line-strong rounded-sm px-4 py-2.5 text-[13px] font-medium text-ink hover:border-teal hover:text-teal transition-colors"
+                >
+                  <FileText size={15} className="text-teal" />
+                  Certificate of Analysis (PDF)
+                </a>
+              )}
+              {product.additionalCoas.map((c) => (
+                <a
+                  key={c.url}
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border border-line-strong rounded-sm px-4 py-2.5 text-[13px] font-medium text-ink hover:border-teal hover:text-teal transition-colors"
+                >
+                  <FileText size={15} className="text-teal" />
+                  {c.label}
+                </a>
+              ))}
+            </div>
           )}
 
           <ul className="flex flex-col gap-2 border-t border-line mt-6 pt-5 text-[13px] text-ink-soft">

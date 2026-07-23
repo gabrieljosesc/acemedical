@@ -11,10 +11,11 @@ export default async function AdminEditProductPage({ params }: { params: Promise
   const { id } = await params;
   const admin = createAdminClient();
 
-  const [{ data: product }, { data: categories }, { data: brands }] = await Promise.all([
+  const [{ data: product }, { data: categories }, { data: brands }, { data: additionalCoas }] = await Promise.all([
     admin.from("products").select("*").eq("id", id).single(),
     admin.from("categories").select("id, name").order("sort_order"),
     admin.from("brands").select("id, name").order("name"),
+    admin.from("product_coas").select("label, file_url").eq("product_id", id).order("sort_order"),
   ]);
 
   if (!product) notFound();
@@ -46,6 +47,7 @@ export default async function AdminEditProductPage({ params }: { params: Promise
           description: product.description ?? "",
           images: product.images ?? [],
           coaUrl: product.coa_url ?? null,
+          additionalCoas: (additionalCoas ?? []).map((c) => ({ label: c.label, url: c.file_url })),
         }}
         categories={categories ?? []}
         brands={brands ?? []}

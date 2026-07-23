@@ -185,6 +185,12 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const specs = (data.specs ?? []) as Array<{ label: string; value: string }>;
   const category = Array.isArray(data.categories) ? data.categories[0] : data.categories;
 
+  const { data: additionalCoas } = await admin
+    .from("product_coas")
+    .select("label, file_url")
+    .eq("product_id", data.id)
+    .order("sort_order");
+
   return {
     ...catalog,
     description: data.description ?? null,
@@ -192,6 +198,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
     specs,
     images: data.images ?? [],
     coaUrl: data.coa_url ?? null,
+    additionalCoas: (additionalCoas ?? []).map((c) => ({ label: c.label, url: c.file_url })),
   };
 }
 

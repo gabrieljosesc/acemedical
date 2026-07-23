@@ -32,6 +32,7 @@ export default function ProductForm({
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const coaRef = useRef<HTMLInputElement>(null);
+  const extraCoaRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     ...initial,
     stockQuantity: initial.stockQuantity === null ? "" : String(initial.stockQuantity),
@@ -42,6 +43,8 @@ export default function ProductForm({
   );
   const [images, setImages] = useState<string[]>(initial.images);
   const [coaUrl, setCoaUrl] = useState<string | null>(initial.coaUrl);
+  const [additionalCoas, setAdditionalCoas] = useState(initial.additionalCoas);
+  const [newCoaLabel, setNewCoaLabel] = useState("");
   const [pending, startTransition] = useTransition();
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -65,6 +68,7 @@ export default function ProductForm({
       description: form.description,
       images,
       coaUrl,
+      additionalCoas,
     };
   }
 
@@ -133,6 +137,31 @@ export default function ProductForm({
         setCoaUrl(result.message);
         if (coaRef.current) coaRef.current.value = "";
         toast.success("COA uploaded — save the product to apply.");
+      } else if (!result.ok) {
+        toast.error(result.message);
+      }
+    });
+  }
+
+  function handleExtraCoaUpload() {
+    const file = extraCoaRef.current?.files?.[0];
+    if (!file) {
+      toast.error("Choose a PDF file first.");
+      return;
+    }
+    if (!newCoaLabel.trim()) {
+      toast.error("Give this certificate a label first (e.g. \"Lot #4471\").");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("coa", file);
+    startTransition(async () => {
+      const result = await uploadProductCoa(formData);
+      if (result.ok && result.message) {
+        setAdditionalCoas((prev) => [...prev, { label: newCoaLabel.trim(), url: result.message! }]);
+        setNewCoaLabel("");
+        if (extraCoaRef.current) extraCoaRef.current.value = "";
+        toast.success("Certificate uploaded — save the product to apply.");
       } else if (!result.ok) {
         toast.error(result.message);
       }
@@ -306,6 +335,44 @@ export default function ProductForm({
           className="w-full rounded-sm border border-teal text-teal text-[13px] font-medium px-4 py-2 hover:bg-teal hover:text-[#F4FBF8] transition-colors disabled:opacity-60"
         >
           Upload COA
+        </button>
+
+        <h2 className="eyebrow mt-6 mb-3 pt-5 border-t border-line">Additional certificates (by lot)</h2>
+        <p className="text-[11px] text-ink-faint mb-2">
+          For separate lab-batch/lot certificates of the same product — shown alongside the main COA above.
+        </p>
+        {additionalCoas.length > 0 && (
+          <ul className="flex flex-col gap-1.5 mb-3">
+            {additionalCoas.map((c, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 text-[12.5px]">
+                <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline truncate">
+                  {c.label}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAdditionalCoas((prev) => prev.filter((_, j) => j !== i))}
+                  className="text-low hover:underline shrink-0"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <input
+          value={newCoaLabel}
+          onChange={(e) => setNewCoaLabel(e.target.value)}
+          placeholder="Label, e.g. Lot #4471"
+          className="w-full border border-line rounded-sm px-2.5 py-1.5 text-[12.5px] bg-card outline-none focus:border-teal transition-colors mb-2"
+        />
+        <input ref={extraCoaRef} type="file" accept="application/pdf" className="block w-full text-[12px] text-ink-soft mb-2" />
+        <button
+          type="button"
+          onClick={handleExtraCoaUpload}
+          disabled={pending}
+          className="w-full rounded-sm border border-teal text-teal text-[13px] font-medium px-4 py-2 hover:bg-teal hover:text-[#F4FBF8] transition-colors disabled:opacity-60"
+        >
+          Upload additional certificate
         </button>
       </div>
     </form>

@@ -24,6 +24,7 @@ export type ProductFormInput = {
   description: string;
   images: string[];
   coaUrl: string | null;
+  additionalCoas: { label: string; url: string }[];
 };
 
 function toRow(input: ProductFormInput) {
@@ -45,6 +46,21 @@ function toRow(input: ProductFormInput) {
   };
 }
 
+async function syncAdditionalCoas(
+  admin: ReturnType<typeof createAdminClient>,
+  productId: string,
+  coas: { label: string; url: string }[]
+) {
+  // Small list, rewritten wholesale on every save — simpler than diffing.
+  await admin.from("product_coas").delete().eq("product_id", productId);
+  const rows = coas
+    .filter((c) => c.label.trim() && c.url.trim())
+    .map((c, i) => ({ product_id: productId, label: c.label.trim(), file_url: c.url.trim(), sort_order: i }));
+  if (rows.length > 0) {
+    await admin.from("product_coas").insert(rows);
+  }
+}
+
 export async function saveProduct(id: string, input: ProductFormInput): Promise<AdminProductResult> {
   const adminUser = await getAdminUser();
   if (!adminUser) return { ok: false, message: "Admin access required." };
@@ -56,6 +72,7 @@ export async function saveProduct(id: string, input: ProductFormInput): Promise<
     if (error.code === "23505") return { ok: false, message: "That slug is already in use." };
     return { ok: false, message: "Couldn't save the product. Please try again." };
   }
+  await syncAdditionalCoas(admin, id, input.additionalCoas);
 
   revalidatePath("/admin/products");
   revalidatePath(`/product/${input.slug}`);
@@ -78,6 +95,7 @@ export async function createProduct(input: ProductFormInput): Promise<AdminProdu
     if (error?.code === "23505") return { ok: false, message: "That slug is already in use." };
     return { ok: false, message: "Couldn't create the product. Please try again." };
   }
+  await syncAdditionalCoas(admin, data.id, input.additionalCoas);
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");
