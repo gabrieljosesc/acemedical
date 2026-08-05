@@ -7,6 +7,7 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import WishlistBadge from "@/components/layout/WishlistBadge";
 import AccountMenu from "@/components/layout/AccountMenu";
 import CategoriesMenu from "@/components/layout/CategoriesMenu";
+import Logo from "@/components/layout/Logo";
 
 const NAV_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
@@ -40,13 +41,8 @@ export default async function Navbar() {
 
       <header className="bg-ground/90 backdrop-blur-md border-b border-line">
         <div className="mx-auto max-w-[1180px] flex items-center gap-6 px-5 sm:px-10 py-4">
-          <Link href="/" className="flex flex-col shrink-0">
-            <span className="font-serif font-semibold text-[23px] tracking-tight text-ink leading-none">
-              Ace<span className="text-teal">Medical</span>
-            </span>
-            <span className="font-mono text-[9px] uppercase text-ink-faint tracking-[0.53em] -mr-[0.53em] mt-1 leading-none">
-              Wholesale
-            </span>
+          <Link href="/" className="flex shrink-0">
+            <Logo />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-5 ml-2">
