@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mail, Phone, Printer } from "lucide-react";
+import Logo from "@/components/layout/Logo";
 
 const SHOP_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
@@ -34,13 +35,8 @@ export default function Footer() {
       <div className="mx-auto max-w-[1180px] px-5 sm:px-10">
         <div className="grid grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-9 pb-10 border-b border-line">
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="inline-flex flex-col">
-              <span className="font-serif font-semibold text-[23px] tracking-tight text-ink leading-none">
-                Ace<span className="text-teal">Medical</span>
-              </span>
-              <span className="font-mono text-[9px] uppercase text-ink-faint tracking-[0.53em] -mr-[0.53em] mt-1 leading-none">
-                Wholesale
-              </span>
+            <Link href="/" className="inline-flex">
+              <Logo />
             </Link>
             <p className="text-[13.5px] text-ink-soft max-w-[34ch] leading-relaxed mt-4">
               Specialty medical and aesthetic supply for licensed clinics.
