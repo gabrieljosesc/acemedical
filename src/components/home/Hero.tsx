@@ -17,7 +17,7 @@ export default function Hero({ product }: { product: HeroProduct }) {
           </h1>
           <p className="text-[17.5px] text-ink-soft max-w-[44ch] mt-5 mb-7 leading-relaxed">
             The wholesale catalog for licensed clinics — dermal fillers,
-            orthopaedic injectables, and botulinum toxins, sourced authentic
+            orthopedic injections, and botulinum toxins, sourced authentic
             and shipped cold-chain across the country.
           </p>
 
