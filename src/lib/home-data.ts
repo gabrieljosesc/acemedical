@@ -117,14 +117,21 @@ export async function getBestSellers(): Promise<CatalogProduct[]> {
   }
 }
 
+// The best sellers pinned to the hero carousel, in slide order. Any that
+// go out of stock are backfilled from the remaining featured products.
+const HERO_PRODUCT_SLUGS = [
+  "euflexxa-81525",
+  "botox-100u-81455",
+  "xeomin-100u-81511",
+  "orthovisc-81521",
+  "prolia-non-english-82373",
+];
+
 export async function getHeroProducts(): Promise<HeroProduct[]> {
   if (!isSupabaseConfigured()) return [FALLBACK_HERO_PRODUCT];
 
   try {
     const admin = createAdminClient();
-    // Best sellers for the hero carousel. Products with a photo make the
-    // best slides, so they rank first; placeholder only if the catalog is
-    // empty.
     const { data: products } = await admin
       .from("products")
       .select(PRODUCT_FIELDS)
@@ -134,12 +141,17 @@ export async function getHeroProducts(): Promise<HeroProduct[]> {
 
     if (!products || products.length === 0) return [FALLBACK_HERO_PRODUCT];
 
-    const ranked = [
-      ...products.filter((p) => (p.images ?? []).length > 0),
-      ...products.filter((p) => (p.images ?? []).length === 0),
-    ];
+    // Pinned slides first (in their listed order), then other featured
+    // products with a photo as backfill up to five slides.
+    const pinned = HERO_PRODUCT_SLUGS.flatMap((slug) => {
+      const match = products.find((p) => p.slug === slug);
+      return match ? [match] : [];
+    });
+    const backfill = products.filter(
+      (p) => !HERO_PRODUCT_SLUGS.includes(p.slug) && (p.images ?? []).length > 0
+    );
 
-    return ranked.slice(0, 5).map((p) => ({
+    return [...pinned, ...backfill].slice(0, 5).map((p) => ({
       ...mapRow(p),
       specs: (p.specs ?? []) as Array<{ label: string; value: string }>,
     }));
