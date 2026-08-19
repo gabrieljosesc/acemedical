@@ -65,7 +65,7 @@ export default function Categories({ categories }: { categories: HomeCategory[] 
             href="/shop"
             className="font-mono text-[12px] tracking-wide text-teal inline-flex gap-1.5 items-center whitespace-nowrap border-b border-transparent hover:border-teal pb-0.5 transition-colors"
           >
-            All {categories.length} categories
+            All categories
             <ArrowRight size={14} />
           </Link>
         </div>

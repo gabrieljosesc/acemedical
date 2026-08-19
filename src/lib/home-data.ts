@@ -50,19 +50,35 @@ const FALLBACK_HERO_PRODUCT: HeroProduct = {
   ],
 };
 
+// The eight categories showcased on the home page, in display order
+// (row 1, then row 2 of the grid).
+const HOME_CATEGORY_SLUGS = [
+  "rheumatology",
+  "orthopedic-injections",
+  "ophthalmology",
+  "gynecology",
+  "dermal-fillers",
+  "botulinum-toxins",
+  "peels-and-masks",
+  "peptides",
+];
+
 export async function getHomeCategories(): Promise<HomeCategory[]> {
   if (!isSupabaseConfigured()) return FALLBACK_CATEGORIES;
 
   try {
     const admin = createAdminClient();
-    const { data: categories, error } = await admin
+    const { data, error } = await admin
       .from("categories")
       .select("slug, name, id")
-      .is("parent_id", null)
-      .order("sort_order")
-      .limit(8);
+      .in("slug", HOME_CATEGORY_SLUGS);
 
-    if (error || !categories || categories.length === 0) return FALLBACK_CATEGORIES;
+    if (error || !data || data.length === 0) return FALLBACK_CATEGORIES;
+
+    const categories = HOME_CATEGORY_SLUGS.flatMap((slug) => {
+      const match = data.find((c) => c.slug === slug);
+      return match ? [match] : [];
+    });
 
     const withCounts = await Promise.all(
       categories.map(async (c) => {
@@ -101,14 +117,14 @@ export async function getBestSellers(): Promise<CatalogProduct[]> {
   }
 }
 
-export async function getHeroProduct(): Promise<HeroProduct> {
-  if (!isSupabaseConfigured()) return FALLBACK_HERO_PRODUCT;
+export async function getHeroProducts(): Promise<HeroProduct[]> {
+  if (!isSupabaseConfigured()) return [FALLBACK_HERO_PRODUCT];
 
   try {
     const admin = createAdminClient();
-    // Prefer a featured product that actually has a photo and a real spec
-    // sheet, since those make the best hero. Fall back to any featured
-    // product, then to the placeholder if the catalog is empty.
+    // Best sellers for the hero carousel. Products with a photo make the
+    // best slides, so they rank first; placeholder only if the catalog is
+    // empty.
     const { data: products } = await admin
       .from("products")
       .select(PRODUCT_FIELDS)
@@ -116,14 +132,18 @@ export async function getHeroProduct(): Promise<HeroProduct> {
       .eq("is_in_stock", true)
       .limit(20);
 
-    if (!products || products.length === 0) return FALLBACK_HERO_PRODUCT;
+    if (!products || products.length === 0) return [FALLBACK_HERO_PRODUCT];
 
-    const withImage = products.find((p) => (p.images ?? []).length > 0) ?? products[0];
-    const catalog = mapRow(withImage);
-    const specs = (withImage.specs ?? []) as Array<{ label: string; value: string }>;
+    const ranked = [
+      ...products.filter((p) => (p.images ?? []).length > 0),
+      ...products.filter((p) => (p.images ?? []).length === 0),
+    ];
 
-    return { ...catalog, specs };
+    return ranked.slice(0, 5).map((p) => ({
+      ...mapRow(p),
+      specs: (p.specs ?? []) as Array<{ label: string; value: string }>,
+    }));
   } catch {
-    return FALLBACK_HERO_PRODUCT;
+    return [FALLBACK_HERO_PRODUCT];
   }
 }
