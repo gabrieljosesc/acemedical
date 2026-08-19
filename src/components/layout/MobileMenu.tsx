@@ -67,7 +67,7 @@ export default function MobileMenu({
             ) : (
               <>
                 <Link href="/auth/login" onClick={close} className={link}>Trade login</Link>
-                <Link href="/auth/signup" onClick={close} className={link}>Apply for a trade account</Link>
+                <Link href="/auth/signup" onClick={close} className={link}>Create an account</Link>
               </>
             )}
             <div className="h-6" />

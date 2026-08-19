@@ -79,7 +79,7 @@ export default function LoginPage() {
       <p className="text-[13.5px] text-ink-soft mt-6">
         No account yet?{" "}
         <Link href="/auth/signup" className="text-teal hover:underline">
-          Apply for a trade account
+          Create an account
         </Link>
       </p>
     </div>
