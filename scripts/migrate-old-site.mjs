@@ -1,33 +1,37 @@
 /**
  * Old acemedicalwholesale.com (WordPress/WooCommerce) → new site
- * migration: users + orders + order items.
+ * migration: users, order history, and profile backfill.
  *
- * Consumes the raw table exports from the old site's database:
+ * Consumes the raw exports from the old site's database:
  *   wp_users (1).csv                 registered accounts
- *   wp_wc_customer_lookup.csv        customer_id → user/email/name  (REQUIRED — links orders to people)
+ *   order_billing.csv                per-order billing identity (from the
+ *                                    wp_postmeta SQL export) — attributes
+ *                                    orders to people
  *   wp_wc_order_stats.csv            one row per order (totals, status, date)
  *   wp_wc_order_product_lookup.csv   line items (product_id, qty, revenue)
  *   scripts/old-shop-products.json   product_id → product name (harvested
  *                                    from the old shop's public API)
  *
- * What it does:
+ * NOTE: the old site's automatic personal-data cleanup anonymized most
+ * historical orders in the source database ("deleted@site.invalid").
+ * Those orders cannot be attributed to anyone and are SKIPPED by
+ * default — pass --include-anonymized to import them anyway as
+ * customer-less records.
+ *
+ * Steps:
  *  1. Creates an auth account per registered old-site user
  *     (email_confirm=true, NO password, user_metadata.migrated=true) —
- *     nobody is emailed. Profiles auto-fill via the signup trigger.
- *  2. Creates orders as "WP-<order_id>" with original dates, totals and
- *     statuses, linked to the new account via the customer lookup;
- *     guest orders keep their email/name but no account.
- *  3. Creates line items with real product names where known.
- *
- * Idempotent: existing emails are reused, orders are skipped by
- * reference_number. Dev/admin accounts (forga.io etc.) are skipped.
+ *     nobody is emailed. Idempotent: existing emails are reused.
+ *  2. Backfills real names / phone / company / address onto migrated
+ *     accounts from their most recent order's billing details.
+ *  3. Creates orders as "WP-<order_id>" with original dates, totals,
+ *     statuses, addresses, and line items (real product names where
+ *     known). Idempotent by reference_number.
  *
  * Usage (from the repo root):
  *   node scripts/migrate-old-site.mjs --dry-run
  *   node scripts/migrate-old-site.mjs
- *
- * CSVs are read from C:\Users\63950\Downloads by default; override with
- *   --dir="D:\some\folder"
+ * Flags: --users-only  --include-anonymized  --dir="D:\some\folder"
  *
  * Afterwards: node scripts/send-password-resets.mjs (separate,
  * deliberate step — that one DOES email people).
@@ -44,11 +48,12 @@ dotenv.config({ path: path.join(__dirname, "..", ".env.local"), quiet: true });
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const USERS_ONLY = process.argv.includes("--users-only");
+const INCLUDE_ANONYMIZED = process.argv.includes("--include-anonymized");
 const dirArg = process.argv.find((a) => a.startsWith("--dir="));
 const DATA_DIR = dirArg ? dirArg.slice(6) : "C:\\Users\\63950\\Downloads";
 
 const USERS_CSV = path.join(DATA_DIR, "wp_users (1).csv");
-const CUSTOMERS_CSV = path.join(DATA_DIR, "wp_wc_customer_lookup.csv");
+const BILLING_CSV = path.join(DATA_DIR, "order_billing.csv");
 const STATS_CSV = path.join(DATA_DIR, "wp_wc_order_stats.csv");
 const ITEMS_CSV = path.join(DATA_DIR, "wp_wc_order_product_lookup.csv");
 const PRODUCTS_JSON = path.join(__dirname, "old-shop-products.json");
@@ -57,6 +62,8 @@ const PRODUCTS_JSON = path.join(__dirname, "old-shop-products.json");
 const SKIP_EMAIL = (email) =>
   email.endsWith("@forga.io") ||
   ["info@acemedicalwholesale.com", "admin@acemedical.com"].includes(email);
+
+const ANON = (v) => !v || v === "[deleted]" || v === "deleted@site.invalid" || v === "0000000000";
 
 // WooCommerce status → ace status (pending | confirmed | shipped | cancelled)
 function mapStatus(s) {
@@ -103,6 +110,7 @@ function parseLine(line) {
 }
 
 const toIso = (mysqlDate) => (mysqlDate ? mysqlDate.replace(" ", "T") + "Z" : undefined);
+const clean = (v) => (ANON(v) ? null : v.trim() || null);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchAllAuthUsers(client) {
@@ -121,20 +129,11 @@ async function fetchAllAuthUsers(client) {
 async function main() {
   console.log(DRY_RUN ? "── DRY RUN — no writes ──" : "── LIVE RUN ──");
 
-  for (const f of [USERS_CSV, STATS_CSV, ITEMS_CSV, PRODUCTS_JSON]) {
+  for (const f of [USERS_CSV, BILLING_CSV, STATS_CSV, ITEMS_CSV, PRODUCTS_JSON]) {
     if (!fs.existsSync(f)) {
       console.error("File not found:", f);
       process.exit(1);
     }
-  }
-  if (!fs.existsSync(CUSTOMERS_CSV)) {
-    console.error(
-      `Missing ${CUSTOMERS_CSV}\n\n` +
-        "wp_wc_customer_lookup is the bridge between orders and people (emails,\n" +
-        "names). Export it from phpMyAdmin the same way as the other tables and\n" +
-        "re-run — without it no order can be attributed to a customer."
-    );
-    process.exit(1);
   }
 
   const target = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -143,19 +142,29 @@ async function main() {
 
   console.log("Reading exports…");
   const wpUsers = parseCSV(USERS_CSV);
-  const customers = parseCSV(CUSTOMERS_CSV);
+  const billing = parseCSV(BILLING_CSV);
   const stats = parseCSV(STATS_CSV).filter((s) => s.parent_id === "0");
   const items = parseCSV(ITEMS_CSV);
   const productNames = JSON.parse(fs.readFileSync(PRODUCTS_JSON, "utf8"));
-  console.log(`  users=${wpUsers.length} customers=${customers.length} orders=${stats.length} items=${items.length}`);
-  console.log(`  customer columns: ${Object.keys(customers[0] ?? {}).join(", ")}`);
 
-  const customerById = new Map(customers.map((c) => [c.customer_id, c]));
-  // wp user id → customer lookup row (for names at account creation)
-  const customerByUserId = new Map(customers.filter((c) => c.user_id && c.user_id !== "0").map((c) => [c.user_id, c]));
+  const billingByOrderId = new Map(billing.map((b) => [b.order_id, b]));
+  const statById = new Map(stats.map((s) => [s.order_id, s]));
+  const attributable = billing.filter((b) => !ANON(b.billing_email));
+  console.log(
+    `  users=${wpUsers.length} orders=${stats.length} (attributable=${attributable.length}, anonymized=${billing.length - attributable.length}) items=${items.length}`
+  );
+
+  // Latest attributable order per email → richest identity source
+  const latestBillingByEmail = new Map();
+  for (const b of attributable) {
+    const email = b.billing_email.toLowerCase().trim();
+    const date = statById.get(b.order_id)?.date_created_gmt ?? "";
+    const prev = latestBillingByEmail.get(email);
+    if (!prev || date > prev.date) latestBillingByEmail.set(email, { ...b, date });
+  }
 
   const existing = await fetchAllAuthUsers(target);
-  const emailToAceId = new Map(existing.map((u) => [u.email?.toLowerCase(), u.id]));
+  const emailToAceUser = new Map(existing.map((u) => [u.email?.toLowerCase(), u]));
   const { data: existingOrders } = await target.from("orders").select("reference_number").range(0, 49999);
   const existingRefs = new Set((existingOrders ?? []).map((o) => o.reference_number));
   console.log(`  existing ace users=${existing.length} orders=${existingRefs.size}`);
@@ -170,48 +179,20 @@ async function main() {
       skipped++;
       continue;
     }
-    if (emailToAceId.has(email)) {
+    if (emailToAceUser.has(email)) {
       existed++;
       continue;
     }
 
-    const lookup = customerByUserId.get(u.ID);
-    let first = lookup?.first_name?.trim() || null;
-    let last = lookup?.last_name?.trim() || null;
-    if (first === "[deleted]") first = null;
-    if (last === "[deleted]") last = null;
-    // display_name is often just the username ("97045") — only treat it
-    // as a real name when it has multiple words. Real names for the rest
-    // arrive with the billing-data backfill.
-    const display = (u.display_name ?? "").trim();
-    if (!first && /\s/.test(display) && display.toLowerCase() !== u.user_login?.toLowerCase()) {
-      const parts = display.split(/\s+/);
-      first = parts[0];
-      last = parts.slice(1).join(" ") || null;
-    }
-
-    const metadata = {
-      migrated: true,
-      migrated_from: "acemedicalwholesale-wp",
-      wp_user_id: u.ID,
-      ...(first ? { first_name: first } : {}),
-      ...(last ? { last_name: last } : {}),
-      ...(lookup?.city ? { city: lookup.city } : {}),
-      ...(lookup?.state ? { state: lookup.state } : {}),
-      ...(lookup?.postcode ? { postal_code: lookup.postcode } : {}),
-      ...(lookup?.country ? { country: lookup.country } : {}),
-    };
-
     if (DRY_RUN) {
       created++;
-      if (created <= 5) console.log(`  WOULD CREATE: ${email} (${[first, last].filter(Boolean).join(" ") || "no name"})`);
       continue;
     }
 
     const { data, error } = await target.auth.admin.createUser({
       email,
       email_confirm: true, // verified on the old site; no email is sent
-      user_metadata: metadata,
+      user_metadata: { migrated: true, migrated_from: "acemedicalwholesale-wp", wp_user_id: u.ID },
     });
     if (error) {
       console.error(`  FAIL: ${email} — ${error.message}`);
@@ -219,12 +200,49 @@ async function main() {
       await sleep(500);
       continue;
     }
-    emailToAceId.set(email, data.user.id);
+    emailToAceUser.set(email, data.user);
     created++;
     if (created % 100 === 0) console.log(`  …${created} users created`);
     await sleep(60);
   }
   console.log(`Users: created=${created} existed=${existed} skipped=${skipped} failed=${failed}`);
+
+  // ── Step 1b: backfill identity from billing details ──────────────
+  console.log("\n--- Profile backfill (from most recent order billing) ---");
+  let backfilled = 0;
+  for (const [email, b] of latestBillingByEmail) {
+    const aceUser = emailToAceUser.get(email);
+    if (!aceUser || aceUser.user_metadata?.migrated !== true) continue;
+
+    const fields = {
+      first_name: clean(b.first_name),
+      last_name: clean(b.last_name),
+      company: clean(b.company),
+      phone: clean(b.phone),
+      address_line1: clean(b.address_1),
+      city: clean(b.city),
+      state: clean(b.state),
+      postal_code: clean(b.zip),
+      country: clean(b.country),
+    };
+    for (const k of Object.keys(fields)) if (fields[k] === null) delete fields[k];
+    if (Object.keys(fields).length === 0) continue;
+
+    if (DRY_RUN) {
+      backfilled++;
+      if (backfilled <= 5) console.log(`  WOULD BACKFILL: ${email} → ${JSON.stringify(fields)}`);
+      continue;
+    }
+
+    await target.auth.admin.updateUserById(aceUser.id, {
+      user_metadata: { ...aceUser.user_metadata, ...fields },
+    });
+    const { error: pErr } = await target.from("profiles").update(fields).eq("id", aceUser.id);
+    if (pErr) console.error(`  PROFILE FAIL: ${email} — ${pErr.message}`);
+    else backfilled++;
+    await sleep(40);
+  }
+  console.log(`Profiles backfilled: ${backfilled}`);
 
   if (USERS_ONLY) {
     console.log("\n--users-only: skipping orders.");
@@ -239,7 +257,7 @@ async function main() {
     itemsByOrder.get(it.order_id).push(it);
   }
 
-  let ordersOk = 0, ordersExist = 0, ordersFail = 0, ordersNoCustomer = 0, itemsOk = 0;
+  let ordersOk = 0, ordersExist = 0, ordersFail = 0, ordersAnonSkipped = 0, itemsOk = 0;
 
   for (const o of stats) {
     const refNum = `WP-${o.order_id}`;
@@ -248,41 +266,49 @@ async function main() {
       continue;
     }
 
-    const cust = customerById.get(o.customer_id);
-    const email = (cust?.email ?? "").toLowerCase().trim();
-    if (!email) ordersNoCustomer++;
-    const userId = email ? emailToAceId.get(email) ?? null : null;
-    const fullName = [cust?.first_name, cust?.last_name].filter(Boolean).join(" ").trim() || cust?.username || null;
-    const lineItems = itemsByOrder.get(o.order_id) ?? [];
+    const b = billingByOrderId.get(o.order_id);
+    const email = ANON(b?.billing_email) ? null : b.billing_email.toLowerCase().trim();
+    if (!email && !INCLUDE_ANONYMIZED) {
+      ordersAnonSkipped++;
+      continue;
+    }
 
+    const aceUser = email ? emailToAceUser.get(email) : null;
+    const fullName = [clean(b?.first_name), clean(b?.last_name)].filter(Boolean).join(" ") || null;
+    const lineItems = itemsByOrder.get(o.order_id) ?? [];
     const subtotal = parseFloat(o.net_total) || 0;
     const total = parseFloat(o.total_sales) || 0;
-    const shipping = parseFloat(o.shipping_total) || 0;
 
     if (DRY_RUN) {
       ordersOk++;
       itemsOk += lineItems.length;
-      if (ordersOk <= 5) console.log(`  WOULD CREATE: ${refNum} (${email || "no customer"}) — ${lineItems.length} item(s), $${total}`);
+      if (ordersOk <= 5) console.log(`  WOULD CREATE: ${refNum} (${email ?? "anonymized"}) — ${lineItems.length} item(s), $${total}`);
       continue;
     }
+
+    const shippingAddress = {
+      ...(fullName ? { recipient_name: fullName } : {}),
+      ...(clean(b?.company) ? { company: clean(b.company) } : {}),
+      ...(clean(b?.address_1) ? { address_line1: clean(b.address_1) } : {}),
+      ...(clean(b?.city) ? { city: clean(b.city) } : {}),
+      ...(clean(b?.state) ? { state: clean(b.state) } : {}),
+      ...(clean(b?.zip) ? { zip: clean(b.zip) } : {}),
+      ...(clean(b?.country) ? { country: clean(b.country) } : {}),
+      ...(clean(b?.phone) ? { phone: clean(b.phone) } : {}),
+    };
 
     const { data: newOrder, error } = await target
       .from("orders")
       .insert({
-        user_id: userId,
+        user_id: aceUser?.id ?? null,
         reference_number: refNum,
         status: mapStatus(o.status),
         subtotal,
-        shipping_amount: shipping,
+        shipping_amount: parseFloat(o.shipping_total) || 0,
         total,
-        shipping_address: {
-          ...(cust?.city ? { city: cust.city } : {}),
-          ...(cust?.state ? { state: cust.state } : {}),
-          ...(cust?.postcode ? { zip: cust.postcode } : {}),
-          ...(cust?.country ? { country: cust.country } : {}),
-        },
+        shipping_address: shippingAddress,
         customer_name: fullName,
-        customer_email: email || "",
+        customer_email: email ?? "",
         created_at: toIso(o.date_created_gmt),
       })
       .select("id")
@@ -311,10 +337,10 @@ async function main() {
     }
 
     ordersOk++;
-    if (ordersOk % 500 === 0) console.log(`  …${ordersOk} orders migrated`);
+    if (ordersOk % 100 === 0) console.log(`  …${ordersOk} orders migrated`);
   }
 
-  console.log(`Orders: migrated=${ordersOk} already-present=${ordersExist} failed=${ordersFail} (without matchable customer: ${ordersNoCustomer})`);
+  console.log(`Orders: migrated=${ordersOk} already-present=${ordersExist} failed=${ordersFail} anonymized-skipped=${ordersAnonSkipped}`);
   console.log(`Items: migrated=${itemsOk}`);
   console.log(`\nDone.${DRY_RUN ? " (dry run — nothing written)" : ""}`);
 }
