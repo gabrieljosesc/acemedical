@@ -36,7 +36,18 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-[420px] px-5 py-16 sm:py-24">
       <p className="eyebrow">Trade account</p>
-      <h1 className="font-serif font-medium text-[30px] tracking-tight mt-2 mb-8">Sign in</h1>
+      <h1 className="font-serif font-medium text-[30px] tracking-tight mt-2 mb-6">Sign in</h1>
+
+      <div className="bg-teal-tint border border-teal/25 rounded-sm px-4 py-3.5 mb-6 text-[13.5px] text-ink leading-relaxed">
+        <span className="font-medium">Returning customer?</span>{" "}
+        Your account has moved to our new site, so you&apos;ll need to{" "}
+        <Link href="/auth/forgot-password" className="text-teal font-medium hover:underline">
+          reset your password
+        </Link>{" "}
+        before your first sign-in. The reset email can land in{" "}
+        <strong className="font-semibold">your spam or junk folder</strong> — please
+        double-check there.
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {error && (
