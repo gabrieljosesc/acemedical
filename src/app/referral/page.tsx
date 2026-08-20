@@ -57,7 +57,7 @@ export default function ReferralPage() {
           href="/auth/signup"
           className="inline-flex items-center gap-2 rounded-sm bg-teal text-[#F4FBF8] font-medium text-[14.5px] px-5.5 py-3.5 hover:bg-teal-deep transition-colors"
         >
-          Open a trade account
+          Create an account
           <ArrowRight size={16} />
         </Link>
         <Link

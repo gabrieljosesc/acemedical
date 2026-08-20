@@ -12,10 +12,21 @@ import Logo from "@/components/layout/Logo";
 const NAV_LINKS = [
   { href: "/shop/dermal-fillers", label: "Dermal fillers" },
   { href: "/shop/botulinum-toxins", label: "Botulinum toxins" },
+  { href: "/shop/rheumatology", label: "Rheumatology" },
   { href: "/shop/orthopedic-injections", label: "Orthopedic" },
-  { href: "/shop/threads", label: "Threads" },
+  { href: "/shop/gynecology", label: "Gynecology" },
   { href: "/peptides", label: "Peptides" },
 ];
+
+// Categories already pinned in the top bar; the dropdown shows the rest.
+const TOP_NAV_SLUGS = new Set([
+  "dermal-fillers",
+  "botulinum-toxins",
+  "rheumatology",
+  "orthopedic-injections",
+  "gynecology",
+  "peptides",
+]);
 
 export default async function Navbar() {
   const [user, { categories }] = await Promise.all([getAuthUser(), getShopFilterOptions()]);
@@ -45,19 +56,6 @@ export default async function Navbar() {
             <Logo />
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-5 ml-2">
-            {NAV_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sm text-ink-soft hover:text-ink py-1.5 transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
-            <CategoriesMenu categories={categories} />
-          </nav>
-
           <div className="ml-auto flex items-center gap-2">
             <SearchBar />
 
@@ -77,6 +75,21 @@ export default async function Navbar() {
             <MobileMenu categories={categories} signedIn={!!user} />
           </div>
         </div>
+
+        <nav className="hidden lg:block border-t border-line">
+          <div className="mx-auto max-w-[1180px] flex items-center gap-6 px-5 sm:px-10">
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-sm whitespace-nowrap text-ink-soft hover:text-ink py-2.5 transition-colors"
+              >
+                {l.label}
+              </Link>
+            ))}
+            <CategoriesMenu categories={categories.filter((c) => !TOP_NAV_SLUGS.has(c.slug))} />
+          </div>
+        </nav>
       </header>
     </div>
   );

@@ -39,7 +39,7 @@ export default function TradeBand() {
             href="/trade/apply"
             className="inline-flex items-center gap-2 rounded-sm bg-[#F4FBF8] text-teal-deep font-medium text-[14.5px] px-5.5 py-3.5 mt-7 hover:bg-[#DFF1EC] transition-colors"
           >
-            Apply for a trade account
+            Create an account
             <ArrowRight size={16} />
           </Link>
         </div>

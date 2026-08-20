@@ -22,9 +22,9 @@ export default function CategoriesMenu({ categories }: { categories: ShopFilterO
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-sm text-ink-soft hover:text-ink py-1.5 transition-colors"
+        className="flex items-center gap-1 text-sm whitespace-nowrap text-ink-soft hover:text-ink py-2.5 transition-colors"
       >
-        Brands
+        Categories
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 

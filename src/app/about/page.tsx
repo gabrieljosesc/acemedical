@@ -12,7 +12,7 @@ export default function AboutPage() {
       <InfoSection title="Who we serve">
         <p>
           We work exclusively with credentialed medical professionals: dermatology and aesthetic clinics,
-          orthopaedic and rheumatology practices, med spas under physician direction, and hospital
+          orthopedic and rheumatology practices, med spas under physician direction, and hospital
           purchasing groups. Every account is verified against a current medical license before trade
           pricing is unlocked.
         </p>

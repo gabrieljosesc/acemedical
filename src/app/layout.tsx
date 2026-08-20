@@ -34,12 +34,12 @@ export const metadata: Metadata = {
     template: "%s | Ace Medical Wholesale",
   },
   description:
-    "The wholesale catalog for licensed clinics — dermal fillers, orthopaedic injectables, and botulinum toxins, sourced authentic and shipped cold-chain nationwide.",
+    "The wholesale catalog for licensed clinics — dermal fillers, orthopedic injections, and botulinum toxins, sourced authentic and shipped cold-chain nationwide.",
   keywords: [
     "medical wholesale",
     "dermal fillers",
     "botox",
-    "orthopaedic injectables",
+    "orthopedic injections",
     "aesthetic supply",
   ],
   openGraph: {

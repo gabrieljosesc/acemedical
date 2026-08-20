@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="flex items-center gap-3 mb-5">
             <span className="font-mono tabular text-[28px] text-amber">{formatPrice(product.price)}</span>
-            <span className="font-mono text-[11px] text-ink-faint tracking-wide">per unit · trade net</span>
+            <span className="font-mono text-[11px] text-ink-faint tracking-wide">per unit</span>
             <WishlistButton productId={product.id} productName={product.name} className="ml-auto border border-line rounded-sm p-2" />
           </div>
 
