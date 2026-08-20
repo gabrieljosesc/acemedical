@@ -43,6 +43,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "..", ".env.local"), quiet: true });
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const USERS_ONLY = process.argv.includes("--users-only");
 const dirArg = process.argv.find((a) => a.startsWith("--dir="));
 const DATA_DIR = dirArg ? dirArg.slice(6) : "C:\\Users\\63950\\Downloads";
 
@@ -177,8 +178,14 @@ async function main() {
     const lookup = customerByUserId.get(u.ID);
     let first = lookup?.first_name?.trim() || null;
     let last = lookup?.last_name?.trim() || null;
-    if (!first && u.display_name?.trim()) {
-      const parts = u.display_name.trim().split(/\s+/);
+    if (first === "[deleted]") first = null;
+    if (last === "[deleted]") last = null;
+    // display_name is often just the username ("97045") — only treat it
+    // as a real name when it has multiple words. Real names for the rest
+    // arrive with the billing-data backfill.
+    const display = (u.display_name ?? "").trim();
+    if (!first && /\s/.test(display) && display.toLowerCase() !== u.user_login?.toLowerCase()) {
+      const parts = display.split(/\s+/);
       first = parts[0];
       last = parts.slice(1).join(" ") || null;
     }
@@ -218,6 +225,11 @@ async function main() {
     await sleep(60);
   }
   console.log(`Users: created=${created} existed=${existed} skipped=${skipped} failed=${failed}`);
+
+  if (USERS_ONLY) {
+    console.log("\n--users-only: skipping orders.");
+    return;
+  }
 
   // ── Step 2: orders ───────────────────────────────────────────────
   console.log("\n--- Orders ---");
