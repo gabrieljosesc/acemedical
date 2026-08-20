@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { isWelcomeBackEligible } from "@/lib/welcome-back";
 import CheckoutForm from "@/components/checkout/CheckoutForm";
 
 export const metadata = { title: "Checkout" };
@@ -35,6 +36,7 @@ export default async function CheckoutPage() {
       supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user.id).neq("status", "cancelled"),
     ]);
   const firstOrder = (priorOrders ?? 0) === 0;
+  const welcomeBackEligible = await isWelcomeBackEligible(admin, user.id);
 
   const recipientName =
     defaultAddress?.recipient_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
@@ -45,6 +47,7 @@ export default async function CheckoutPage() {
     <CheckoutForm
       savedCards={savedCards ?? []}
       isFirstOrder={firstOrder}
+      welcomeBackEligible={welcomeBackEligible}
       prefill={{
         recipientName,
         company: profile?.company ?? "",

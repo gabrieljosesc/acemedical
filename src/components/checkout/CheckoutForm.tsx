@@ -13,6 +13,7 @@ import { meetsCheckoutMinimumUsd } from "@/lib/cart-minimum";
 import CartMinimumBar from "@/components/cart/CartMinimumBar";
 import { placeOrder } from "@/app/actions/orders";
 import { validateCoupon } from "@/app/actions/coupons";
+import { couponDiscount } from "@/lib/coupon-discount";
 import AddressAutocompleteInput from "@/components/forms/AddressAutocompleteInput";
 
 type Prefill = {
@@ -55,10 +56,12 @@ export default function CheckoutForm({
   prefill,
   savedCards,
   isFirstOrder,
+  welcomeBackEligible,
 }: {
   prefill: Prefill;
   savedCards: SavedCard[];
   isFirstOrder: boolean;
+  welcomeBackEligible: boolean;
 }) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
@@ -107,7 +110,10 @@ export default function CheckoutForm({
     );
   }
 
-  const discount = coupon?.discount ?? 0;
+  // Returning customers from the old site get an automatic one-time 5%
+  // (server-validated); a manually applied coupon takes its place.
+  const welcomeBackActive = welcomeBackEligible && !coupon;
+  const discount = coupon?.discount ?? (welcomeBackActive ? couponDiscount("percent", 5, subtotal) : 0);
   const discountedSubtotal = Math.max(0, subtotal - discount);
   const shippingAmount = calculateShipping(discountedSubtotal, isFirstOrder);
   const total = discountedSubtotal + shippingAmount;
@@ -145,7 +151,7 @@ export default function CheckoutForm({
       items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
       shipping,
       billing: billingSame ? null : billing,
-      couponCode: coupon?.code,
+      couponCode: coupon?.code ?? (welcomeBackActive ? "WELCOME5" : undefined),
       policyAccepted,
       savedCardId: selectedCardId === "new" ? null : selectedCardId,
       savedCardCvv: selectedCardId === "new" ? undefined : savedCardCvv,
@@ -344,6 +350,19 @@ export default function CheckoutForm({
               ))}
             </ul>
 
+            {welcomeBackActive && (
+              <div className="bg-teal-tint border border-teal/25 rounded-sm px-3.5 py-3 mb-4 text-[13px] text-ink leading-relaxed">
+                <span className="font-medium">Welcome back!</span> As a thank-you for being a
+                returning customer, a one-time <span className="font-medium">5% discount</span> has
+                been applied to this order automatically.
+              </div>
+            )}
+            {welcomeBackEligible && coupon && (
+              <p className="text-[12px] text-ink-faint mb-4">
+                Your coupon replaced the automatic 5% returning-customer discount.
+              </p>
+            )}
+
             {/* Coupon */}
             <div className="mb-4 pb-4 border-b border-line">
               {coupon ? (
@@ -382,7 +401,7 @@ export default function CheckoutForm({
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-stock">
-                  <span>Discount ({coupon?.code})</span>
+                  <span>{coupon ? `Discount (${coupon.code})` : "Returning customer (5%)"}</span>
                   <span className="font-mono tabular">−{formatPrice(discount)}</span>
                 </div>
               )}

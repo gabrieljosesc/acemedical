@@ -69,6 +69,8 @@ function resetEmailHtml(resetUrl) {
         history have already been moved over for you.</p>
         <p ${P}>For security, your old password was not carried across. Click the button
         below to set a new one and sign in.</p>
+        <p ${P}>As a thank-you for coming back: a one-time <strong>5% discount</strong> is
+        applied automatically at checkout on your next order.</p>
         <p style="margin:20px 0">
           <a href="${resetUrl}" style="display:inline-block;background:${TEAL};color:#F4FBF8;text-decoration:none;font-weight:bold;font-family:Arial,sans-serif;font-size:14px;padding:12px 28px;border-radius:2px">Set My Password</a>
         </p>
@@ -92,6 +94,8 @@ function resetEmailText(resetUrl) {
 Your account and order history have been moved over. For security, your old password was not carried across — set a new one here:
 
 ${resetUrl}
+
+As a thank-you for coming back, a one-time 5% discount is applied automatically at checkout on your next order.
 
 If you did not expect this email, you can safely ignore it.`;
 }
