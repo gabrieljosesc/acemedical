@@ -7,6 +7,7 @@ import { calculateShipping } from "@/lib/shipping";
 import { meetsCheckoutMinimumUsd, MIN_CHECKOUT_SUBTOTAL_USD } from "@/lib/cart-minimum";
 import { parsePriceTiers, unitPriceForQuantity } from "@/lib/price-tiers";
 import { couponDiscount } from "@/lib/coupon-discount";
+import { WELCOME_BACK_CODE, WELCOME_BACK_PERCENT, isWelcomeBackEligible } from "@/lib/welcome-back";
 import { sendOrderReceivedEmail, sendAdminNewOrderEmail } from "@/lib/email/order-emails";
 
 const REFERENCE_FLOOR = 100000;
@@ -226,7 +227,15 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   // the client's applied discount is never trusted.
   let couponCode: string | null = null;
   let discountAmount = 0;
-  if (input.couponCode?.trim()) {
+  if (input.couponCode?.trim().toUpperCase() === WELCOME_BACK_CODE) {
+    // Automatic returning-customer discount — eligibility, not the
+    // coupons table, is the source of truth.
+    if (!(await isWelcomeBackEligible(admin, user.id))) {
+      return { ok: false, message: "That discount is no longer available — refresh the page and try again." };
+    }
+    couponCode = WELCOME_BACK_CODE;
+    discountAmount = couponDiscount("percent", WELCOME_BACK_PERCENT, subtotal);
+  } else if (input.couponCode?.trim()) {
     const code = input.couponCode.trim().toUpperCase();
     const { data: coupon } = await admin
       .from("coupons")

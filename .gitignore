@@ -41,5 +41,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Issued customer coupon log (contains customer emails)
-scripts/customer-coupons.local.csv
