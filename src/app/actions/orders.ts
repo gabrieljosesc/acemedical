@@ -47,10 +47,17 @@ type PlaceOrderInput = {
 
 type PlaceOrderResult = { ok: true; referenceNumber: string } | { ok: false; message: string };
 
-async function nextReferenceNumber(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
-  const { data } = await supabase
+// Must run with the service-role client: RLS only shows customers their
+// own orders, so a per-user view would recompute an already-taken number
+// (and keep recomputing it on every retry).
+async function nextReferenceNumber(
+  admin: ReturnType<typeof createAdminClient>,
+  attempt = 0
+): Promise<string> {
+  const { data } = await admin
     .from("orders")
     .select("reference_number")
+    .like("reference_number", "AMW-%")
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -59,7 +66,7 @@ async function nextReferenceNumber(supabase: Awaited<ReturnType<typeof createCli
     const match = row.reference_number.match(/(\d+)$/);
     if (match) max = Math.max(max, parseInt(match[1], 10));
   }
-  return `AMW-${max + 1}`;
+  return `AMW-${max + 1 + attempt}`;
 }
 
 export async function isFirstOrder(): Promise<boolean> {
@@ -283,7 +290,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const billingAddressJson = input.billing ? toAddressJson(input.billing) : null;
 
   for (let attempt = 0; attempt < 5; attempt++) {
-    const referenceNumber = await nextReferenceNumber(supabase);
+    const referenceNumber = await nextReferenceNumber(admin, attempt);
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
