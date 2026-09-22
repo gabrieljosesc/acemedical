@@ -33,7 +33,7 @@ export default async function PeptidesPage() {
     category: "peptides",
     sort: "name_asc",
     page: 1,
-    pageSize: 12,
+    pageSize: 100, // the full catalog — this page shows every peptide
   });
 
   return (
@@ -60,12 +60,14 @@ export default async function PeptidesPage() {
       </div>
 
       <div className="flex justify-between items-end gap-6 flex-wrap mt-12 mb-6">
-        <h2 className="font-serif font-medium text-[24px] tracking-tight">Browse peptides</h2>
+        <h2 className="font-serif font-medium text-[24px] tracking-tight">
+          Browse all {count} peptides
+        </h2>
         <Link
           href="/shop/peptides"
           className="font-mono text-[12px] tracking-wide text-teal inline-flex gap-1.5 items-center whitespace-nowrap border-b border-transparent hover:border-teal pb-0.5 transition-colors"
         >
-          All {count} peptides
+          Filter &amp; sort
           <ArrowRight size={14} />
         </Link>
       </div>
