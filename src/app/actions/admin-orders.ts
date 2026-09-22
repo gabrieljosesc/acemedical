@@ -66,6 +66,7 @@ export async function saveOrderItemsAction(input: {
   orderId: string;
   items: EditableOrderItem[];
   shippingAmount: number;
+  discountAmount?: number;
 }): Promise<AdminOrderResult> {
   const adminUser = await getAdminUser();
   if (!adminUser) return { ok: false, message: "Admin access required." };
@@ -86,7 +87,9 @@ export async function saveOrderItemsAction(input: {
 
   const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
   const shippingAmount = Math.max(0, Number(input.shippingAmount) || 0);
-  const total = subtotal + shippingAmount;
+  const discountAmount =
+    Math.round(Math.min(subtotal, Math.max(0, Number(input.discountAmount) || 0)) * 100) / 100;
+  const total = Math.max(0, subtotal - discountAmount) + shippingAmount;
 
   const admin = createAdminClient();
   const { error: deleteError } = await admin.from("order_items").delete().eq("order_id", input.orderId);
@@ -103,7 +106,13 @@ export async function saveOrderItemsAction(input: {
 
   const { error: orderError } = await admin
     .from("orders")
-    .update({ subtotal, shipping_amount: shippingAmount, total, updated_at: new Date().toISOString() })
+    .update({
+      subtotal,
+      shipping_amount: shippingAmount,
+      discount_amount: discountAmount,
+      total,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", input.orderId);
   if (orderError) return { ok: false, message: "Items saved, but totals failed to update." };
 
