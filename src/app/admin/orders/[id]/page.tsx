@@ -222,6 +222,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
               })
             )}
             initialShipping={Number(order.shipping_amount ?? 0)}
+            initialDiscount={Number(order.discount_amount ?? 0)}
           />
 
           <section className="bg-card border border-line rounded-[4px] p-5">
@@ -231,6 +232,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                 <span className="text-ink-soft">Subtotal</span>
                 <span className="font-mono tabular">{formatPrice(Number(order.subtotal))}</span>
               </div>
+              {Number(order.discount_amount ?? 0) > 0 && (
+                <div className="flex justify-between text-stock">
+                  <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
+                  <span className="font-mono tabular">−{formatPrice(Number(order.discount_amount))}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-ink-soft">Shipping</span>
                 <span className="font-mono tabular">
