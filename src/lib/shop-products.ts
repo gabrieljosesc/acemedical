@@ -111,8 +111,12 @@ export async function getShopProducts(
     case "best-selling":
       query = query.order("featured", { ascending: false }).order("created_at", { ascending: false });
       break;
-    default:
+    case "latest":
       query = query.order("created_at", { ascending: false });
+      break;
+    default:
+      // Default sort is alphabetical
+      query = query.order("name", { ascending: true });
   }
 
   const { data, count, error } = await query.range(start, end);

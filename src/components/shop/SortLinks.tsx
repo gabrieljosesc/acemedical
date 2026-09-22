@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { ShopParams } from "@/components/shop/ShopFilters";
 
 const OPTIONS: { value: string; label: string }[] = [
+  { value: "name_asc", label: "Name A–Z" },
   { value: "latest", label: "Latest" },
   { value: "best-selling", label: "Best selling" },
   { value: "price_asc", label: "Price: low to high" },
   { value: "price_desc", label: "Price: high to low" },
-  { value: "name_asc", label: "Name A–Z" },
 ];
 
 export default function SortLinks({ pathname, current }: { pathname: string; current: ShopParams }) {
-  const currentSort = current.sort ?? "latest";
+  const currentSort = current.sort ?? "name_asc";
 
   function buildUrl(sort: string) {
     const merged: ShopParams = { ...current, sort };
