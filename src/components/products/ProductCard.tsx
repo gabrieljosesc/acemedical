@@ -12,7 +12,7 @@ const STOCK_COPY: Record<CatalogProduct["stockLabel"], string> = {
 };
 
 export default function ProductCard({ product }: { product: CatalogProduct }) {
-  const { stockLabel } = product;
+  const { stockLabel, isFree } = product;
   return (
     <Link
       href={`/product/${product.slug}`}
@@ -52,6 +52,11 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
           />
           {STOCK_COPY[stockLabel]}
         </span>
+        {isFree && (
+          <span className="absolute bottom-2.5 left-2.5 z-10 font-mono text-[9px] tracking-wide uppercase px-1.5 py-0.5 rounded-full bg-stock text-[#F4FBF8] shadow-[0_1px_4px_rgba(8,40,32,0.12)]">
+            Free
+          </span>
+        )}
         <WishlistButton
           productId={product.id}
           productName={product.name}
@@ -69,7 +74,11 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
           <div className="font-mono tabular text-[11px] text-ink-soft mt-2.5">{product.specLine}</div>
         )}
         <div className="mt-auto pt-3.5 flex items-center justify-between gap-2.5">
-          <span className="font-mono tabular text-[19px] text-amber">{formatPrice(product.price)}</span>
+          {isFree ? (
+            <span className="font-mono tabular text-[19px] text-stock font-medium">FREE</span>
+          ) : (
+            <span className="font-mono tabular text-[19px] text-amber">{formatPrice(product.price)}</span>
+          )}
           <AddToCartButton
             product={product}
             className="border border-teal text-teal rounded-sm px-3.5 py-2 text-[12.5px] font-medium hover:bg-teal hover:text-[#F4FBF8] transition-colors"

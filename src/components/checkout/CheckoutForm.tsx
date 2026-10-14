@@ -345,7 +345,9 @@ export default function CheckoutForm({
                   <span className="text-ink-soft truncate">
                     {item.quantity} × {item.name}
                   </span>
-                  <span className="font-mono tabular shrink-0">{formatPrice(lineUnitPrice(item) * item.quantity)}</span>
+                  <span className={`font-mono tabular shrink-0 ${item.isFree ? "text-stock font-medium" : ""}`}>
+                    {item.isFree ? "FREE" : formatPrice(lineUnitPrice(item) * item.quantity)}
+                  </span>
                 </li>
               ))}
             </ul>

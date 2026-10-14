@@ -42,6 +42,7 @@ export default async function AdminEditProductPage({ params }: { params: Promise
           stockQuantity: product.stock_quantity,
           isInStock: product.is_in_stock,
           featured: product.featured,
+          isFree: product.is_free === true,
           categoryId: product.category_id,
           brandId: product.brand_id,
           description: product.description ?? "",

@@ -81,10 +81,21 @@ export default async function ProductPage({ params }: Props) {
           {product.brand && <p className="text-[14px] text-ink-faint mb-4">{product.brand}</p>}
 
           <div className="flex items-center gap-3 mb-5">
-            <span className="font-mono tabular text-[28px] text-amber">{formatPrice(product.price)}</span>
-            <span className="font-mono text-[11px] text-ink-faint tracking-wide">per unit</span>
+            {product.isFree ? (
+              <span className="font-mono tabular text-[28px] text-stock font-medium">FREE</span>
+            ) : (
+              <>
+                <span className="font-mono tabular text-[28px] text-amber">{formatPrice(product.price)}</span>
+                <span className="font-mono text-[11px] text-ink-faint tracking-wide">per unit</span>
+              </>
+            )}
             <WishlistButton productId={product.id} productName={product.name} className="ml-auto border border-line rounded-sm p-2" />
           </div>
+          {product.isFree && (
+            <p className="text-[14px] text-ink-soft -mt-3 mb-5">
+              Complimentary with your peptide order — add it to your cart at no charge.
+            </p>
+          )}
 
           <span
             className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wide px-2.5 py-1 rounded-full mb-6 ${

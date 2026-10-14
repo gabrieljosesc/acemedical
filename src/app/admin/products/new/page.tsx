@@ -34,6 +34,7 @@ export default async function AdminNewProductPage() {
           stockQuantity: null,
           isInStock: true,
           featured: false,
+          isFree: false,
           categoryId: null,
           brandId: null,
           description: "",

@@ -11,6 +11,8 @@ export type CartItem = {
   sku: string | null;
   quantity: number;
   priceTiers?: PriceTier[];
+  /** Complimentary item — shown as "FREE" (price is 0). */
+  isFree?: boolean;
 };
 
 const STORAGE_KEY = "acemedical_cart";
@@ -46,6 +48,7 @@ export function addToCart(
     image: string | null;
     sku: string | null;
     priceTiers?: PriceTier[];
+    isFree?: boolean;
   },
   quantity: number
 ): CartItem[] {
@@ -66,6 +69,7 @@ export function addToCart(
       sku: product.sku,
       quantity,
       priceTiers: product.priceTiers ?? [],
+      isFree: product.isFree === true,
     });
   }
 

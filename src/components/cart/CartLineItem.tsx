@@ -64,14 +64,21 @@ export default function CartLineItem({ item }: { item: CartItem }) {
               <Plus size={13} />
             </button>
           </div>
-          <span className="font-mono tabular text-[16px] text-amber">
-            {formatPrice(lineUnitPrice(item) * item.quantity)}
-            {lineUnitPrice(item) < item.price && (
-              <span className="block text-[10px] text-stock text-right">
-                {formatPrice(lineUnitPrice(item))}/unit volume price
-              </span>
-            )}
-          </span>
+          {item.isFree ? (
+            <span className="font-mono tabular text-[16px] text-stock font-medium">
+              FREE
+              <span className="block text-[10px] text-ink-faint text-right font-normal">{formatPrice(0)}</span>
+            </span>
+          ) : (
+            <span className="font-mono tabular text-[16px] text-amber">
+              {formatPrice(lineUnitPrice(item) * item.quantity)}
+              {lineUnitPrice(item) < item.price && (
+                <span className="block text-[10px] text-stock text-right">
+                  {formatPrice(lineUnitPrice(item))}/unit volume price
+                </span>
+              )}
+            </span>
+          )}
         </div>
       </div>
     </div>

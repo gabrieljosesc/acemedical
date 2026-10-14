@@ -18,7 +18,7 @@ export default async function WishlistPage() {
   const { data: items } = await supabase
     .from("wishlist_items")
     .select(
-      "product:products(id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, brands(name), categories(name))"
+      "product:products(id, slug, name, sku, price, price_tiers, is_free, stock_quantity, is_in_stock, specs, images, brands(name), categories(name))"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });

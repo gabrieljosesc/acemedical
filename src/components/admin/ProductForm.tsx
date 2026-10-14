@@ -63,6 +63,7 @@ export default function ProductForm({
       stockQuantity: form.stockQuantity === "" ? null : Number(form.stockQuantity),
       isInStock: form.isInStock,
       featured: form.featured,
+      isFree: form.isFree,
       categoryId: form.categoryId,
       brandId: form.brandId,
       description: form.description,
@@ -207,8 +208,12 @@ export default function ProductForm({
         </FormSection>
 
         <FormSection title="Pricing">
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3 items-end">
             <FormField label="Base price (USD)" required type="number" value={form.price} onChange={(e) => set("price", e.target.value)} />
+            <label className="flex items-center gap-2 cursor-pointer text-[13.5px] text-ink pb-2">
+              <input type="checkbox" checked={form.isFree} onChange={(e) => set("isFree", e.target.checked)} className="h-4 w-4 accent-teal" />
+              Free item (shows &ldquo;FREE&rdquo;)
+            </label>
           </div>
 
           <div>

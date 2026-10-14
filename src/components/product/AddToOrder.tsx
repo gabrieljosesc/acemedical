@@ -25,6 +25,7 @@ export default function AddToOrder({ product }: { product: ProductDetail }) {
         image: product.image,
         sku: product.sku,
         priceTiers: product.priceTiers,
+        isFree: product.isFree,
       },
       qty
     );
@@ -62,7 +63,7 @@ export default function AddToOrder({ product }: { product: ProductDetail }) {
           Add to order
         </button>
       </div>
-      {qty > 1 && (
+      {qty > 1 && !product.isFree && (
         <p className="font-mono tabular text-[13px] text-ink-soft mt-2.5">
           {qty} × {formatPrice(unitPrice)} ={" "}
           <span className="text-ink font-medium">{formatPrice(lineTotal)}</span>

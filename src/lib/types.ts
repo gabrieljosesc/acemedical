@@ -14,6 +14,8 @@ export type CatalogProduct = {
   categoryLabel: string;
   image: string | null;
   priceTiers: PriceTier[];
+  /** Complimentary item (e.g. freebie with peptide orders) — shows "FREE" instead of a price. */
+  isFree: boolean;
 };
 
 export type ProductDetail = CatalogProduct & {

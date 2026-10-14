@@ -18,7 +18,7 @@ export interface ShopFilterParams {
 export type ShopFilterOption = { slug: string; name: string };
 
 const PRODUCT_FIELDS =
-  "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
+  "id, slug, name, sku, price, price_tiers, is_free, stock_quantity, is_in_stock, specs, images, brands(name), categories(name)";
 
 function isSupabaseConfigured() {
   return Boolean(
@@ -36,6 +36,7 @@ export function mapRow(row: {
   is_in_stock: boolean;
   specs: unknown;
   price_tiers?: unknown;
+  is_free?: boolean | null;
   images: string[] | null;
   brands: { name: string } | { name: string }[] | null;
   categories: { name: string } | { name: string }[] | null;
@@ -61,6 +62,7 @@ export function mapRow(row: {
     categoryLabel: category ?? "",
     image: row.images?.[0] ?? null,
     priceTiers: parsePriceTiers(row.price_tiers),
+    isFree: row.is_free === true,
   };
 }
 
@@ -178,7 +180,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const { data, error } = await admin
     .from("products")
     .select(
-      "id, slug, name, sku, price, price_tiers, stock_quantity, is_in_stock, specs, images, coa_url, description, brands(name), categories(name, slug)"
+      "id, slug, name, sku, price, price_tiers, is_free, stock_quantity, is_in_stock, specs, images, coa_url, description, brands(name), categories(name, slug)"
     )
     .eq("slug", slug)
     .single();

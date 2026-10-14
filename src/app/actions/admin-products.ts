@@ -19,6 +19,8 @@ export type ProductFormInput = {
   stockQuantity: number | null;
   isInStock: boolean;
   featured: boolean;
+  /** Complimentary item — storefront shows "FREE" instead of the price. */
+  isFree: boolean;
   categoryId: string | null;
   brandId: string | null;
   description: string;
@@ -37,6 +39,7 @@ function toRow(input: ProductFormInput) {
     stock_quantity: input.stockQuantity === null ? null : Math.max(0, Math.round(input.stockQuantity)),
     is_in_stock: input.isInStock,
     featured: input.featured,
+    is_free: input.isFree === true,
     category_id: input.categoryId || null,
     brand_id: input.brandId || null,
     description: input.description.trim() || null,
