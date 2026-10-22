@@ -11,6 +11,9 @@
  *   node scripts/send-ddp-notice.mjs --send          → send to all targets
  *
  * Other flags: --limit=N  --offset=N  --delay=ms (default 400)
+ *              --list=file.txt     use a text file of addresses (one per line)
+ *                                  instead of the database users
+ *              --exclude=file.txt  skip addresses in this file (already sent)
  *
  * Requires SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS in .env.local.
  * IMAP defaults to the same host/credentials on port 993 (override with
@@ -38,6 +41,8 @@ const ONLY = (typeof args.only === "string" ? args.only : "").toLowerCase().trim
 const LIMIT = parseInt(args.limit ?? "9999", 10);
 const OFFSET = parseInt(args.offset ?? "0", 10);
 const DELAY = parseInt(args.delay ?? "400", 10);
+const LIST_FILE = typeof args.list === "string" ? args.list : null;
+const EXCLUDE_FILE = typeof args.exclude === "string" ? args.exclude : null;
 
 const SUBJECT = "Important update regarding upcoming shipments";
 const FROM_NAME = "Ace Medical Wholesale";
@@ -138,7 +143,7 @@ async function fetchAllAuthUsers(client) {
   return all;
 }
 
-function classify(users) {
+function classify(users, exclude = new Set()) {
   const targets = [];
   const skipped = []; // { email, reason }
   const seen = new Set();
@@ -147,9 +152,10 @@ function classify(users) {
     if (!email) { skipped.push({ email: `(no email, id ${u.id})`, reason: "no email address" }); continue; }
     if (seen.has(email)) { skipped.push({ email, reason: "duplicate" }); continue; }
     seen.add(email);
-    if (email.includes("test")) { skipped.push({ email, reason: "test account" }); continue; }
+    if (email.includes("test") || email.includes("tjoption")) { skipped.push({ email, reason: "test account" }); continue; }
     if (email === FROM_ADDR) { skipped.push({ email, reason: "sender mailbox itself" }); continue; }
     if (!EMAIL_RE.test(email) || email.endsWith(".invalid")) { skipped.push({ email, reason: "invalid address" }); continue; }
+    if (exclude.has(email)) { skipped.push({ email, reason: "already sent" }); continue; }
     targets.push(email);
   }
   targets.sort();
@@ -165,15 +171,33 @@ async function main() {
     process.exit(1);
   }
 
-  const admin = createClient(url, key, { auth: { persistSession: false } });
-  console.log("Loading users…");
-  const users = await fetchAllAuthUsers(admin);
-  let { targets, skipped } = classify(users);
+  const { readFileSync } = await import("fs");
+  const exclude = new Set(
+    EXCLUDE_FILE
+      ? readFileSync(EXCLUDE_FILE, "utf8").split(/\r?\n/).map((l) => l.trim().toLowerCase()).filter(Boolean)
+      : []
+  );
+
+  let users;
+  if (LIST_FILE) {
+    users = readFileSync(LIST_FILE, "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((email) => ({ email }));
+    console.log(`Using list file: ${LIST_FILE} (${users.length} lines)`);
+  } else {
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+    console.log("Loading users…");
+    users = await fetchAllAuthUsers(admin);
+  }
+  if (exclude.size) console.log(`Excluding ${exclude.size} already-sent addresses (${EXCLUDE_FILE})`);
+  let { targets, skipped } = classify(users, exclude);
 
   if (ONLY) targets = targets.filter((e) => e === ONLY);
   else targets = targets.slice(OFFSET, OFFSET + LIMIT);
 
-  console.log(`Users in database: ${users.length}`);
+  console.log(`Addresses considered: ${users.length}`);
   console.log(`Targets: ${targets.length}   Skipped: ${skipped.length}`);
   for (const s of skipped) console.log(`  SKIP (${s.reason}): ${s.email}`);
 
